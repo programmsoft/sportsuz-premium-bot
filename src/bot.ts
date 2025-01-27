@@ -1,11 +1,11 @@
 import {Bot, Context, InlineKeyboard, session, SessionFlavor} from 'grammy';
-import {config} from './config';
+import {config, SubscriptionType} from './config';
 import {SubscriptionService} from './services/subscription.service';
 import logger from './utils/logger';
 
 interface SessionData {
     pendingSubscription?: {
-        type: 'basic' | 'standard' | 'premium';
+        type: SubscriptionType
     };
 }
 
@@ -235,7 +235,7 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
     /**
      * Create new subscription for user
      */
-    private async confirmSubscription(type: 'basic' | 'standard' | 'premium', ctx: BotContext): Promise<void> {
+    private async confirmSubscription(type: SubscriptionType, ctx: BotContext): Promise<void> {
         try {
             const userId = ctx.from?.id;
             if (!userId) {
@@ -246,8 +246,8 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
             try {
                 const subscription = await this.subscriptionService.createSubscription(
                     userId,
-                    ctx.from?.username,
-                    type
+                    type,
+                    ctx.from?.username
                 );
 
                 const privateLink = await this.getPrivateLink();

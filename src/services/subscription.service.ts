@@ -1,42 +1,49 @@
 import {IUserDocument, UserModel} from '../database/models/user.model';
-import {SUBSCRIPTION_PLANS} from '../config';
+import {SUBSCRIPTION_PLANS, SubscriptionType} from '../config';
 import logger from '../utils/logger';
 
 export class SubscriptionService {
     async createSubscription(
         userId: number,
+        planType: SubscriptionType,
         username?: string,
-        planType: 'basic' | 'standard' | 'premium' = 'basic'
     ): Promise<IUserDocument> {
         // First check if user already exists
-        const existingUser = await UserModel.findOne({ userId });
+        const existingUser = await UserModel.findOne({userId});
 
         if (existingUser) {
-            // If user exists but subscription is not active, update their subscription
+            // If user exists but subscription is not active, handle renewal
             if (!existingUser.isActive) {
-
-                if (existingUser.subscriptionType === planType ){
-                    const endDate = new Date();
-
-                }
-                const plan = SUBSCRIPTION_PLANS[planType];
                 const now = new Date();
-                const endDate = new Date();
-                endDate.setDate(now.getDate() + plan.durationInDays);
+                let endDate = new Date();
+
+                // If same plan type and subscription hasn't expired yet
+                if (existingUser.subscriptionType === planType && existingUser.subscriptionEnd > now) {
+                    // Continue from the previous end date
+                    endDate = new Date(existingUser.subscriptionEnd);
+                    endDate.setDate(endDate.getDate() + SUBSCRIPTION_PLANS[planType].duration);
+                } else {
+                    // Different plan type or expired subscription - start fresh
+                    const plan = SUBSCRIPTION_PLANS[planType];
+                    endDate.setDate(now.getDate() + plan.duration);
+                }
 
                 existingUser.subscriptionStart = now;
                 existingUser.subscriptionEnd = endDate;
                 existingUser.isActive = true;
                 existingUser.subscriptionType = planType;
                 if (username) {
-                    existingUser.username = username; // Update username if provided
+                    existingUser.username = username;
                 }
 
-                logger.info(`Reactivating subscription for existing user ${userId}`, {planType});
+                logger.info(`Reactivating subscription for existing user ${userId}`, {
+                    planType,
+                    continuedFromPrevious: existingUser.subscriptionType === planType && existingUser.subscriptionEnd > now
+                });
                 return await existingUser.save();
             }
 
-            // If user exists and subscription is active, throw error or return existing user
+            // If user exists and subscription is active, throw error
             logger.info(`User ${userId} already has an active subscription`);
             throw new Error('User already has an active subscription');
         }
@@ -45,7 +52,7 @@ export class SubscriptionService {
         const plan = SUBSCRIPTION_PLANS[planType];
         const now = new Date();
         const endDate = new Date();
-        endDate.setDate(now.getDate() + plan.durationInDays);
+        endDate.setDate(now.getDate() + plan.duration);
 
         const subscription = new UserModel({
             userId,
@@ -76,7 +83,7 @@ export class SubscriptionService {
 
     async renewSubscription(
         userId: number,
-        planType?: 'basic' | 'premium'
+        planType?: SubscriptionType
     ): Promise<IUserDocument | null> {
         const subscription = await this.getSubscription(userId);
 
@@ -86,7 +93,7 @@ export class SubscriptionService {
 
         const plan = SUBSCRIPTION_PLANS[planType || subscription.subscriptionType];
         const endDate = new Date();
-        endDate.setDate(endDate.getDate() + plan.durationInDays);
+        endDate.setDate(endDate.getDate() + plan.duration);
 
         subscription.subscriptionEnd = endDate;
         subscription.isActive = true;
