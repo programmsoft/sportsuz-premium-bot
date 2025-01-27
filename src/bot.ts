@@ -3,6 +3,8 @@ import {config, SubscriptionType} from './config';
 import {SubscriptionService} from './services/subscription.service';
 import logger from './utils/logger';
 
+
+// 27-Yanvarda userlarni kickout qilish methodi qolib ketdi
 interface SessionData {
     pendingSubscription?: {
         type: SubscriptionType
@@ -37,6 +39,10 @@ export class SubscriptionBot {
         setInterval(async () => {
             try {
                 await this.subscriptionService.deactivateExpiredSubscriptions();
+                const expiredUsers = await this.subscriptionService.listExpiredSubscriptions();
+                for (const user of expiredUsers) {
+                    await this.handleKickOutForNonPayment(user);
+                }
             } catch (error) {
                 logger.error('Error in subscription cleanup job:', error);
             }
@@ -91,7 +97,8 @@ export class SubscriptionBot {
             'confirm_subscribe_basic': this.confirmSubscription.bind(this, 'basic'),
             'confirm_subscribe_standard': this.confirmSubscription.bind(this, 'standard'),
             'confirm_subscribe_premium': this.confirmSubscription.bind(this, 'premium'),
-            'cancel_subscription': this.handleCancelSubscription.bind(this)
+            'cancel_subscription': this.handleCancelSubscription.bind(this),
+            'kick_out_for_non_payment': this.handleKickOutForNonPayment.bind(this),
         };
 
         const handler = handlers[data];
@@ -186,7 +193,6 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
             await ctx.answerCallbackQuery("Obuna holatini tekshirishda xatolik yuz berdi.");
         }
     }
-
 
     /**
      * Display subscription plans
@@ -366,4 +372,39 @@ Quyidagi havola orqali kanalga kirishingiz mumkin:`,
             await ctx.answerCallbackQuery("Obunani bekor qilishda xatolik yuz berdi.");
         }
     }
+
+    private async handleKickOutForNonPayment(ctx?: BotContext, userId?: number, chatId?: number): Promise<void> {
+        try {
+            if (ctx) {
+                userId = ctx.from?.id;
+                chatId = ctx.chat?.id;
+            }
+
+            if (!userId || !chatId) {
+                logger.error("User ID or chat ID is missing.");
+                return;
+            }
+
+            const subscription = await this.subscriptionService.getSubscription(userId);
+
+            if (!subscription || !subscription.isActive) {
+                // Kick the user out
+                try {
+                    await this.bot.api.banChatMember(chatId, userId);
+                    logger.info(`User ${userId} kicked out due to non-payment.`);
+                } catch (error) {
+                    logger.error('Error kicking out user:', error);
+                }
+            } else {
+                logger.info(`User ${userId} still has an active subscription.`);
+            }
+        } catch (error) {
+            logger.error('Error in handleKickOutForNonPayment:', error);
+        }
+    }
+
+
+    // sending message to users who have not paid
+    // TODO: send message to users who have not paid 3 days before their subscription ends
+
 }

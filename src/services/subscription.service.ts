@@ -1,5 +1,6 @@
 import {IUserDocument, UserModel} from '../database/models/user.model';
 import {SUBSCRIPTION_PLANS, SubscriptionType} from '../config';
+
 import logger from '../utils/logger';
 
 export class SubscriptionService {
@@ -107,7 +108,7 @@ export class SubscriptionService {
 
     async listExpiredSubscriptions(): Promise<IUserDocument[]> {
         const now = new Date();
-        return await UserModel.find({
+        return UserModel.find({
             subscriptionEnd: {$lt: now},
             isActive: true
         });
@@ -147,6 +148,7 @@ export class SubscriptionService {
             return false;
         }
     }
+
 
 
 }
