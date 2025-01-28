@@ -34,20 +34,51 @@ export class SubscriptionBot {
     /**
      * Start the bot and set up subscription cleanup job
      */
+    // public async start(): Promise<void> {
+    //     // Clean up expired subscriptions every 24 hours
+    //     setInterval(async () => {
+    //         try {
+    //             await this.subscriptionService.deactivateExpiredSubscriptions();
+    //             const expiredUsers = await this.subscriptionService.listExpiredSubscriptions();
+    //             for (const user of expiredUsers) {
+    //                 await this.handleKickOutForNonPayment(user);
+    //             }
+    //         } catch (error) {
+    //             logger.error('Error in subscription cleanup job:', error);
+    //         }
+    //     }, 2000);
+    //     // 24 * 60 * 60 * 1000
+    //     this.bot.start({
+    //         onStart: () => {
+    //             logger.info('Bot started');
+    //         }
+    //     });
+    // }
+
     public async start(): Promise<void> {
-        // Clean up expired subscriptions every 24 hours
+        // Clean up expired subscriptions every 2 seconds
         setInterval(async () => {
             try {
+                logger.info('Running subscription cleanup job...'); // Debug log
+
+                // First deactivate expired subscriptions
                 await this.subscriptionService.deactivateExpiredSubscriptions();
+                logger.info('Deactivated expired subscriptions'); // Debug log
+
+                // Get list of expired users
                 const expiredUsers = await this.subscriptionService.listExpiredSubscriptions();
+                logger.info(`Found ${expiredUsers.length} expired subscriptions`); // Debug log
+
+                // Process each expired user
                 for (const user of expiredUsers) {
+                    logger.info(`Processing expired user: ${user.userId}`); // Debug log
                     await this.handleKickOutForNonPayment(user);
                 }
             } catch (error) {
                 logger.error('Error in subscription cleanup job:', error);
             }
-        }, 2000);
-        // 24 * 60 * 60 * 1000
+        }, 200000); // 2 seconds
+
         this.bot.start({
             onStart: () => {
                 logger.info('Bot started');
@@ -373,30 +404,54 @@ Quyidagi havola orqali kanalga kirishingiz mumkin:`,
         }
     }
 
-    private async handleKickOutForNonPayment(ctx?: BotContext, userId?: number, chatId?: number): Promise<void> {
+    private async handleKickOutForNonPayment(userOrCtx: BotContext | { userId: number, _id: any }): Promise<void> {
         try {
-            if (ctx) {
-                userId = ctx.from?.id;
-                chatId = ctx.chat?.id;
+            let userId: number;
+
+            if ('from' in userOrCtx) {
+                userId = userOrCtx.from?.id || 0;
+            } else {
+                userId = userOrCtx.userId;
             }
 
-            if (!userId || !chatId) {
-                logger.error("User ID or chat ID is missing.");
+            if (!userId) {
+                logger.error("User ID is missing.");
                 return;
             }
 
             const subscription = await this.subscriptionService.getSubscription(userId);
 
             if (!subscription || !subscription.isActive) {
-                // Kick the user out
                 try {
-                    await this.bot.api.banChatMember(chatId, userId);
-                    logger.info(`User ${userId} kicked out due to non-payment.`);
+                    // Check if user is already kicked out
+                    if (subscription?.isKickedOut) {
+                        logger.info(`User ${userId} was already kicked out. Skipping.`);
+                        return;
+                    }
+
+                    // Ban user from channel
+                    await this.bot.api.banChatMember(config.CHANNEL_ID, userId);
+                    logger.info(`Successfully kicked out user ${userId}`);
+
+                    // Update the database to mark user as kicked out
+                    if (subscription) {
+                        subscription.isKickedOut = true;
+                        await subscription.save();
+                        logger.info(`Marked user ${userId} as kicked out in database`);
+                    }
+
+                    // Notify the user (only sent once due to isKickedOut flag)
+                    try {
+                        await this.bot.api.sendMessage(userId,
+                            "⚠️ Sizning obunangiz muddati tugaganligi sababli kanaldan chiqarildingi. " +
+                            "Qayta obuna bo'lish uchun botga murojaat qiling.");
+                        logger.info(`Notification sent to user ${userId}`);
+                    } catch (error) {
+                        logger.error(`Failed to send notification to user ${userId}:`, error);
+                    }
                 } catch (error) {
-                    logger.error('Error kicking out user:', error);
+                    logger.error(`Failed to kick out user ${userId}:`, error);
                 }
-            } else {
-                logger.info(`User ${userId} still has an active subscription.`);
             }
         } catch (error) {
             logger.error('Error in handleKickOutForNonPayment:', error);
