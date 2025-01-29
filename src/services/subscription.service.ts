@@ -3,12 +3,17 @@ import {SUBSCRIPTION_PLANS, SubscriptionType} from '../config';
 
 import logger from '../utils/logger';
 
+interface SubscriptionResponse {
+    user: IUserDocument;
+    wasKickedOut: boolean;
+}
+
 export class SubscriptionService {
     async createSubscription(
         userId: number,
         planType: SubscriptionType,
         username?: string,
-    ): Promise<IUserDocument> {
+    ): Promise<SubscriptionResponse> {  // Updated return type
         const existingUser = await UserModel.findOne({userId});
 
         if (existingUser) {
@@ -28,12 +33,22 @@ export class SubscriptionService {
                 existingUser.subscriptionEnd = endDate;
                 existingUser.isActive = true;
                 existingUser.subscriptionType = planType;
-                existingUser.isKickedOut = false;  // Reset kicked out status
+                existingUser.isKickedOut = false;
                 if (username) {
                     existingUser.username = username;
                 }
 
-                return await existingUser.save();
+                // This will be used to track if we need to unban
+                const wasKickedOut = existingUser.isKickedOut;
+                existingUser.isKickedOut = false;
+
+                const savedUser = await existingUser.save();
+
+                // Return with the correct type
+                return {
+                    user: savedUser,
+                    wasKickedOut
+                };
             }
 
             throw new Error('User already has an active subscription');
@@ -54,8 +69,16 @@ export class SubscriptionService {
             isKickedOut: false
         });
 
-        return await subscription.save();
+        const savedUser = await subscription.save();
+
+        // Return with the correct type
+        return {
+            user: savedUser,
+            wasKickedOut: false
+        };
     }
+
+
     async getSubscription(userId: number): Promise<IUserDocument | null> {
         return await UserModel.findOne({userId});
     }
@@ -96,10 +119,10 @@ export class SubscriptionService {
 
     async listExpiredSubscriptions(): Promise<IUserDocument[]> {
         const now = new Date();
-        logger.info('Checking for expired subscriptions...', { currentTime: now });
+        logger.info('Checking for expired subscriptions...', {currentTime: now});
 
         const expiredUsers = await UserModel.find({
-            subscriptionEnd: { $lt: now },
+            subscriptionEnd: {$lt: now},
             isActive: false,
             isKickedOut: false
         });
@@ -148,7 +171,6 @@ export class SubscriptionService {
             return false;
         }
     }
-
 
 
 }
