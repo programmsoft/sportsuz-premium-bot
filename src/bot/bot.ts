@@ -1,7 +1,7 @@
 import {Bot, Context, InlineKeyboard, session, SessionFlavor} from 'grammy';
-import {config, SubscriptionType} from './config';
-import {SubscriptionService} from './services/subscription.service';
-import logger from './utils/logger';
+import {config, SubscriptionType} from '../config';
+import {SubscriptionService} from '../services/subscription.service';
+import logger from '../utils/logger';
 
 
 // 27-Yanvarda userlarni kickout qilish methodi qolib ketdi
@@ -15,7 +15,7 @@ type BotContext = Context & SessionFlavor<SessionData>;
 
 // Subscription plan details
 const SUBSCRIPTION_PLANS = {
-    basic: {price: 1000, duration: 30, name: 'Basic'},
+    basic: {price: 7777, duration: 30, name: 'Basic'},
     standard: {price: 5000, duration: 90, name: 'Standard'},
     premium: {price: 15000, duration: 360, name: 'Premium'}
 };
@@ -77,7 +77,7 @@ export class SubscriptionBot {
             } catch (error) {
                 logger.error('Error in subscription cleanup job:', error);
             }
-        }, 200000); // 2 seconds
+        }, 2000); // 2 seconds
 
         this.bot.start({
             onStart: () => {
@@ -249,14 +249,21 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
             }
 
             const keyboard = new InlineKeyboard();
-            Object.entries(SUBSCRIPTION_PLANS).forEach(([type, plan]) => {
-                keyboard
-                    .text(
-                        `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-                        `confirm_subscribe_${type}`
-                    )
-                    .row();
-            });
+            const plan = SUBSCRIPTION_PLANS.basic;
+
+            keyboard.text(
+                `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
+                `confirm_subscribe_basic`
+            );
+            // keyinroq qo'shilsa ochamiz buni
+            // Object.entries(SUBSCRIPTION_PLANS).forEach(([type, plan]) => {
+            //     keyboard
+            //         .text(
+            //             `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
+            //             `confirm_subscribe_${type}`
+            //         )
+            //         .row();
+            // });
             keyboard.text("🔙 Asosiy menyu", "main_menu");
 
             await ctx.editMessageText(

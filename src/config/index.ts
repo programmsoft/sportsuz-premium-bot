@@ -10,7 +10,7 @@ export interface SubscriptionPlan {
 export type SubscriptionType = 'basic' | 'standard' | 'premium';
 
 export const SUBSCRIPTION_PLANS: Record<SubscriptionType, SubscriptionPlan> = {
-    basic: {price: 1000, duration: 30, name: 'Basic'},
+    basic: {price: 7777, duration: 30, name: 'Basic'},
     standard: {price: 5000, duration: 90, name: 'Standard'},
     premium: {price: 15000, duration: 360, name: 'Premium'}
 };

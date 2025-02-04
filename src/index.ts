@@ -1,5 +1,5 @@
 import { connectDB } from './database/db';
-import { SubscriptionBot } from './bot';
+import { SubscriptionBot } from './bot/bot';
 import logger from './utils/logger';
 
 async function main() {
