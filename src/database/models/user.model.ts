@@ -1,5 +1,5 @@
 import mongoose, {Document, Schema} from 'mongoose';
-import {SubscriptionType} from "@/config";
+import {SubscriptionType} from "../../config";
 
 export interface IUserDocument extends Document {
     userId: number;
