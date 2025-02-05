@@ -4,6 +4,7 @@ import {SubscriptionService} from '../services/subscription.service';
 import logger from '../utils/logger';
 import {Plan} from "../database/models/plans.model";
 import {UserModel} from "../database/models/user.model";
+import {generatePaymeLink} from "../shared/generators/payme-link.generator";
 
 
 interface SessionData {
@@ -210,9 +211,20 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
                 return;
             }
 
-            keyboard.text(
+            // keyboard.text(
+            //     `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
+            //     `confirm_subscribe_basic`
+            // );
+
+            const paymeCheckoutPageLink = generatePaymeLink({
+                planId: plan._id as string,
+                amount: plan.price,
+                userId: user._id as string
+            });
+
+            keyboard.url(
                 `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-                `confirm_subscribe_basic`
+                paymeCheckoutPageLink
             );
 
             keyboard.text("🔙 Asosiy menyu", "main_menu");
