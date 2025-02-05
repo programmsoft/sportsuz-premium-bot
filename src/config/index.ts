@@ -29,7 +29,7 @@ export const config = cleanEnv(process.env, {
     CLICK_SECRET: num(),
     CLICK_MERCHANT_USER_ID: num(),
 
-    PAYME_MERCHANT_ID: num(),
+    PAYME_MERCHANT_ID: str(),
     PAYME_LOGIN: str(),
     PAYME_PASSWORD: str(),
     PAYME_PASSWORD_TEST: str()
