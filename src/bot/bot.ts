@@ -2,6 +2,7 @@ import {Bot, Context, InlineKeyboard, session, SessionFlavor} from 'grammy';
 import {config, SubscriptionType} from '../config';
 import {SubscriptionService} from '../services/subscription.service';
 import logger from '../utils/logger';
+import {Plan} from "../database/models/plans.model";
 
 
 // 27-Yanvarda userlarni kickout qilish methodi qolib ketdi
@@ -225,21 +226,20 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
             }
 
             const keyboard = new InlineKeyboard();
-            const plan = SUBSCRIPTION_PLANS.basic;
+            const plan =  await Plan.findOne({
+                name: 'Basic'
+            });
+
+            if (!plan) {
+                await ctx.answerCallbackQuery("Obuna turlarini ko'rsatishda xatolik yuz berdi.");
+                return;
+            }
 
             keyboard.text(
                 `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
                 `confirm_subscribe_basic`
             );
-            // keyinroq qo'shilsa ochamiz buni
-            // Object.entries(SUBSCRIPTION_PLANS).forEach(([type, plan]) => {
-            //     keyboard
-            //         .text(
-            //             `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-            //             `confirm_subscribe_${type}`
-            //         )
-            //         .row();
-            // });
+
             keyboard.text("🔙 Asosiy menyu", "main_menu");
 
             await ctx.editMessageText(
