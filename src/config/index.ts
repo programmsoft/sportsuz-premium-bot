@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import {cleanEnv, str} from 'envalid';
+import {cleanEnv, num, str} from 'envalid';
 
 export interface SubscriptionPlan {
     price: number;
@@ -18,8 +18,19 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionType, SubscriptionPlan> = {
 dotenv.config();
 
 export const config = cleanEnv(process.env, {
+    APP_PORT: num({default: 3000}),
     BOT_TOKEN: str(),
     MONGODB_URI: str(),
     CHANNEL_ID: str(),
-    NODE_ENV: str({choices: ['development', 'production'], default: 'development'})
+    NODE_ENV: str({choices: ['development', 'production'], default: 'development'}),
+
+    CLICK_SERVICE_ID: num(),
+    CLICK_MERCHANT_ID: num(),
+    CLICK_SECRET: num(),
+    CLICK_MERCHANT_USER_ID: num(),
+
+    PAYME_LOGIN: str(),
+    PAYME_PASSWORD: str(),
+    PAYME_PASSWORD_TEST: str()
+
 });
