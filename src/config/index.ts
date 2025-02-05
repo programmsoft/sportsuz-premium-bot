@@ -32,5 +32,4 @@ export const config = cleanEnv(process.env, {
     PAYME_LOGIN: str(),
     PAYME_PASSWORD: str(),
     PAYME_PASSWORD_TEST: str()
-
 });

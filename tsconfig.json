@@ -9,6 +9,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "strictPropertyInitialization": false,
     "noImplicitAny": true,
     "moduleResolution": "node",
     "sourceMap": true,
