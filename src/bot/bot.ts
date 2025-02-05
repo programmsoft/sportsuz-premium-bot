@@ -31,30 +31,6 @@ export class SubscriptionBot {
         this.setupHandlers();
     }
 
-    /**
-     * Start the bot and set up subscription cleanup job
-     */
-    // public async start(): Promise<void> {
-    //     // Clean up expired subscriptions every 24 hours
-    //     setInterval(async () => {
-    //         try {
-    //             await this.subscriptionService.deactivateExpiredSubscriptions();
-    //             const expiredUsers = await this.subscriptionService.listExpiredSubscriptions();
-    //             for (const user of expiredUsers) {
-    //                 await this.handleKickOutForNonPayment(user);
-    //             }
-    //         } catch (error) {
-    //             logger.error('Error in subscription cleanup job:', error);
-    //         }
-    //     }, 2000);
-    //     // 24 * 60 * 60 * 1000
-    //     this.bot.start({
-    //         onStart: () => {
-    //             logger.info('Bot started');
-    //         }
-    //     });
-    // }
-
     public async start(): Promise<void> {
         // Clean up expired subscriptions every 2 seconds
         setInterval(async () => {

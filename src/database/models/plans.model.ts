@@ -1,15 +1,11 @@
 import mongoose from 'mongoose';
 
 const planSchema = new mongoose.Schema({
-    titleUz: {
+    name: {
         type: String,
         required: true
     },
-    titleRu: {
-        type: String,
-        required: true
-    },
-    availablePeriod: {
+    duration: {
         type: Number,
         required: true,
         comment: 'In days'
