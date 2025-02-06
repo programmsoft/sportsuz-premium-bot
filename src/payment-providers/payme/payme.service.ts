@@ -123,6 +123,8 @@ export class PaymeService {
     const planId = createTransactionDto.params?.account?.plan_id;
     const userId = createTransactionDto.params?.account?.user_id;
     const transId = createTransactionDto.params?.id;
+    console.log("CreateTransaction method is starting ......");
+    console.log("WATCH transId : ", transId);
 
     if (!ValidationHelper.isValidObjectId(planId)) {
       return {
@@ -167,7 +169,7 @@ export class PaymeService {
     if (transaction) {
       if (transaction.status !== 'PENDING') {
         return {
-          error: PaymeError.CantDoOperation,
+          error: PaymeError.TransactionInProcess,
           id: transId,
         };
       }
