@@ -18,6 +18,7 @@ export class PaymeController {
   @UseGuards(PaymeBasicAuthGuard)
   @HttpCode(HttpStatus.OK)
   async handleTransactionMethods(@Body() reqBody: RequestBody) {
+    console.log("I am being called with reqBody:", reqBody);
     return await this.paymeService.handleTransactionMethods(reqBody);
   }
 }
