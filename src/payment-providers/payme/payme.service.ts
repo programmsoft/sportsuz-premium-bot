@@ -234,6 +234,13 @@ export class PaymeService {
       };
     }
 
+    if (existingTransaction?.transId !== transId) {
+      return {
+        error: PaymeError.TransactionInProcess,
+        id: transId,
+      };
+    }
+
     const newTransaction = await transactionModel.create({
       transId: createTransactionDto.params.id,
       userId: createTransactionDto.params.account.user_id,
