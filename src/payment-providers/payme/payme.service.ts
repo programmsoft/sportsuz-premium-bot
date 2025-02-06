@@ -162,7 +162,13 @@ export class PaymeService {
       };
     }
 
-    const transaction = await transactionModel.findOne({ transId }).exec();
+    // const transaction = await transactionModel.findOne({ transId }).exec();
+    const transaction = await transactionModel.findOne({
+          userId: userId,
+          planId: planId,
+          status:  'PENDING',
+          transId: { $ne: transId } // Exclude current transaction
+      }).exec();
 
     if (transaction) {
       if (transaction.status !== 'PENDING') {
@@ -172,19 +178,19 @@ export class PaymeService {
         };
       }
 
-      const existingActiveTransaction = await transactionModel.findOne({
-        userId: userId,
-        planId: planId,
-        status:  'PENDING',
-        transId: { $ne: transId } // Exclude current transaction
-      }).exec();
-
-      if (existingActiveTransaction) {
-        return {
-          error: PaymeError.TransactionInProcess,
-          id: transId,
-        };
-      }
+      // const existingActiveTransaction = await transactionModel.findOne({
+      //   userId: userId,
+      //   planId: planId,
+      //   status:  'PENDING',
+      //   transId: { $ne: transId } // Exclude current transaction
+      // }).exec();
+      //
+      // if (existingActiveTransaction) {
+      //   return {
+      //     error: PaymeError.TransactionInProcess,
+      //     id: transId,
+      //   };
+      // }
 
       if (this.checkTransactionExpiration(transaction.createdAt)) {
         await transactionModel.findOneAndUpdate(
