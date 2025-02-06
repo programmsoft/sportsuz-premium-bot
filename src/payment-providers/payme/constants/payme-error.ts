@@ -53,6 +53,15 @@ export const PaymeError = {
       en: 'Paid for the product',
     },
   },
+  TransactionInProcess: {
+    name: 'TransactionInProcess',
+    code: -31099,
+    message: {
+      uz: "Buyurtma to'lovi hozirda amalga oshirilmoqda",
+      ru: "Платеж на этот заказ на данный момент обрабатывается",
+      en: "Order payment is already being processed"
+    }
+  },
   Pending: {
     name: 'Pending',
     code: -31050,

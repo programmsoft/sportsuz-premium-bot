@@ -255,7 +255,7 @@ export class PaymeService {
     if (transaction.status !== 'PENDING') {
       if (transaction.status !== 'PAID') {
         return {
-          error: PaymeError.CantDoOperation,
+          error: PaymeError.TransactionInProcess,
           id: performTransactionDto.params.id,
         };
       }
