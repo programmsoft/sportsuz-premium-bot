@@ -161,23 +161,25 @@ export class PaymeService {
         id: transId,
       };
     }
-    const existingActiveTransaction = await transactionModel.findOne({
-      userId: userId,
-      planId: planId,
-      status: { $in: ['PENDING', 'PAID'] },
-      transId: { $ne: transId } // Exclude current transaction
-    }).exec();
 
-    if (existingActiveTransaction) {
-      return {
-        error: PaymeError.TransactionInProcess,
-        id: transId,
-      };
-    }
     const transaction = await transactionModel.findOne({ transId }).exec();
 
     if (transaction) {
       if (transaction.status !== 'PENDING') {
+        return {
+          error: PaymeError.TransactionInProcess,
+          id: transId,
+        };
+      }
+
+      const existingActiveTransaction = await transactionModel.findOne({
+        userId: userId,
+        planId: planId,
+        status: { $in: ['PENDING', 'PAID'] },
+        transId: { $ne: transId } // Exclude current transaction
+      }).exec();
+
+      if (existingActiveTransaction) {
         return {
           error: PaymeError.TransactionInProcess,
           id: transId,
