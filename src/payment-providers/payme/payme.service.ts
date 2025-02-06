@@ -14,6 +14,7 @@ import { CancelingReasons } from './constants/canceling-reasons';
 import {UserModel as userModel} from "../../database/models/user.model";
 import {Plan as planModel} from "../../database/models/plans.model";
 import {Transaction as transactionModel} from "../../database/models/transactions.model";
+import {ValidationHelper} from "../../utils/validation.helper";
 
 @Injectable()
 export class PaymeService {
@@ -56,6 +57,8 @@ export class PaymeService {
     const planId = checkPerformTransactionDto.params?.account?.plan_id;
     const userId = checkPerformTransactionDto.params?.account?.user_id;
 
+
+
     const plan = await planModel.findById(planId).exec();
     const user = await userModel.findById(userId).exec();
     console.log("WATCH! the plan is: ", plan);
@@ -93,6 +96,20 @@ export class PaymeService {
     const planId = createTransactionDto.params?.account?.plan_id;
     const userId = createTransactionDto.params?.account?.user_id;
     const transId = createTransactionDto.params?.id;
+
+    if (!ValidationHelper.isValidObjectId(planId)) {
+      return {
+        error: PaymeError.ProductNotFound,
+        id: transId,
+      };
+    }
+
+    if (!ValidationHelper.isValidObjectId(userId)) {
+      return {
+        error: PaymeError.UserNotFound,
+        id: transId,
+      };
+    }
 
     const plan = await planModel.findById(planId).exec();
     const user = await userModel.findById(userId).exec();
