@@ -162,28 +162,12 @@ export class PaymeService {
       };
     }
 
-    const existingActiveTransaction = await transactionModel.findOne({
-      userId: userId,
-      planId: planId,
-      status: 'PENDING'
-    }).exec();
-    if (existingActiveTransaction) {
-      return {
-        error: {
-          code: -31099,
-          message: PaymeError.TransactionInProcess,
-        },
-        id: transId
-      };
-    }
-
-
     const transaction = await transactionModel.findOne({ transId }).exec();
 
     if (transaction) {
       if (transaction.status !== 'PENDING') {
         return {
-          error: PaymeError.TransactionInProcess,
+          error: PaymeError.CantDoOperation,
           id: transId,
         };
       }
