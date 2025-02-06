@@ -57,6 +57,33 @@ export class PaymeService {
     const planId = checkPerformTransactionDto.params?.account?.plan_id;
     const userId = checkPerformTransactionDto.params?.account?.user_id;
 
+    if (!ValidationHelper.isValidObjectId(planId)) {
+      return {
+        error: {
+          code: ErrorStatusCodes.TransactionNotAllowed,
+          message: {
+            uz: 'Sizda mahsulot/foydalanuvchi topilmadi',
+            en: 'Product/user not found',
+            ru: 'Товар/пользователь не найден',
+          },
+          data: null,
+        },
+      };
+    }
+
+    if (!ValidationHelper.isValidObjectId(userId)) {
+      return {
+        error: {
+          code: ErrorStatusCodes.TransactionNotAllowed,
+          message: {
+            uz: 'Sizda mahsulot/foydalanuvchi topilmadi',
+            en: 'Product/user not found',
+            ru: 'Товар/пользователь не найден',
+          },
+          data: null,
+        },
+      };
+    }
 
 
     const plan = await planModel.findById(planId).exec();
