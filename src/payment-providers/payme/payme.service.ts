@@ -20,7 +20,9 @@ export class PaymeService {
   constructor() {}
 
   async handleTransactionMethods(reqBody: RequestBody) {
+    console.log("WATCH the request body: ", reqBody)
     const method = reqBody.method;
+    console.log("WATCH! the method is: ", method);
     switch (method) {
       case TransactionMethods.CheckPerformTransaction:
         return await this.checkPerformTransaction(
