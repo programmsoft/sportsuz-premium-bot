@@ -53,7 +53,7 @@ export class PaymeService {
   async checkPerformTransaction(
       checkPerformTransactionDto: CheckPerformTransactionDto,
   ) {
-    const planId = checkPerformTransactionDto.params?.account?.planId;
+    const planId = checkPerformTransactionDto.params?.account?.plan_id;
     const userId = checkPerformTransactionDto.params?.account?.user_id;
 
     const plan = await planModel.findById(planId).exec();
@@ -90,7 +90,7 @@ export class PaymeService {
   }
 
   async createTransaction(createTransactionDto: CreateTransactionDto) {
-    const planId = createTransactionDto.params?.account?.planId;
+    const planId = createTransactionDto.params?.account?.plan_id;
     const userId = createTransactionDto.params?.account?.user_id;
     const transId = createTransactionDto.params?.id;
 
@@ -156,7 +156,7 @@ export class PaymeService {
       params: {
         amount: plan.price,
         account: {
-          planId,
+          plan_id: planId,
           user_id: userId,
         },
       },
@@ -174,7 +174,7 @@ export class PaymeService {
     const newTransaction = await transactionModel.create({
       transId: createTransactionDto.params.id,
       userId: createTransactionDto.params.account.user_id,
-      planId: createTransactionDto.params.account.planId,
+      planId: createTransactionDto.params.account.plan_id,
       provider: 'payme',
       state: TransactionState.Pending,
       amount: createTransactionDto.params.amount,
