@@ -155,6 +155,13 @@ export class PaymeService {
       };
     }
 
+    if (createTransactionDto.params.amount !== plan.price) {
+      return {
+        error: PaymeError.InvalidAmount,
+        id: transId,
+      };
+    }
+
     const transaction = await transactionModel.findOne({ transId }).exec();
 
     if (transaction) {
