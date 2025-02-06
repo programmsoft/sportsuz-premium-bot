@@ -176,14 +176,13 @@ export class PaymeService {
 
     const transaction = await transactionModel.findOne({ transId }).exec();
 
-    if (existingTransaction?.transId !== transId) {
-      return {
-        error: PaymeError.TransactionInProcess,
-        id: transId,
-      };
-    }
     if (transaction) {
-
+      if (transaction.status !== 'PENDING') {
+        return {
+          error: PaymeError.TransactionInProcess,
+          id: transId,
+        };
+      }
 
       if (this.checkTransactionExpiration(transaction.createdAt)) {
         await transactionModel.findOneAndUpdate(
