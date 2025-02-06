@@ -411,10 +411,10 @@ export class PaymeService {
       result: {
         create_time: transaction.createdAt.getTime(),
         perform_time: transaction.performTime ? new Date(transaction.performTime).getTime() : null,
-        cancel_time:transaction.cancelTime ? new Date(transaction.cancelTime).getTime() : null,
+        cancel_time:transaction.cancelTime ? new Date(transaction.cancelTime).getTime() : 0,
         transaction: transaction.id,
         state: transaction.state,
-        reason: transaction.reason,
+        reason: transaction.reason ?? null,
       },
     };
   }
