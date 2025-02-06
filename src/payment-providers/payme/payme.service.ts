@@ -13,7 +13,7 @@ import { PaymeError } from './constants/payme-error';
 import { CancelingReasons } from './constants/canceling-reasons';
 import {UserModel as userModel} from "../../database/models/user.model";
 import {Plan as planModel} from "../../database/models/plans.model";
-import {Transaction as transactionModel} from "../../database/models/transactions.model";
+import {Transaction as transactionModel, TransactionStatus} from "../../database/models/transactions.model";
 import {ValidationHelper} from "../../utils/validation.helper";
 
 @Injectable()
@@ -123,6 +123,8 @@ export class PaymeService {
     const planId = createTransactionDto.params?.account?.plan_id;
     const userId = createTransactionDto.params?.account?.user_id;
     const transId = createTransactionDto.params?.id;
+
+
     console.log("CreateTransaction method is starting ......");
     console.log("WATCH transId : ", transId);
 
@@ -142,6 +144,8 @@ export class PaymeService {
 
     const plan = await planModel.findById(planId).exec();
     const user = await userModel.findById(userId).exec();
+
+
 
     if (!user) {
       return {
@@ -164,15 +168,22 @@ export class PaymeService {
       };
     }
 
+    const existingTransaction = await transactionModel.findOne({
+      userId,
+      planId,
+      status: TransactionStatus.PENDING
+    }).exec();
+
     const transaction = await transactionModel.findOne({ transId }).exec();
 
+    if (existingTransaction?.transId !== transId) {
+      return {
+        error: PaymeError.TransactionInProcess,
+        id: transId,
+      };
+    }
     if (transaction) {
-      if (transaction.status !== 'PENDING') {
-        return {
-          error: PaymeError.TransactionInProcess,
-          id: transId,
-        };
-      }
+
 
       if (this.checkTransactionExpiration(transaction.createdAt)) {
         await transactionModel.findOneAndUpdate(
