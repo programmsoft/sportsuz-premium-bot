@@ -162,26 +162,6 @@ export class PaymeService {
       };
     }
 
-    const existingActiveTransaction = await transactionModel.findOne({
-      userId: userId,
-      planId: planId,
-      status: { $in: ['PENDING', 'PAID'] }  // Check for any active transactions
-    }).exec();
-    if (existingActiveTransaction) {
-      return {
-        error: {
-          code: -31099,
-          message: {
-            uz: "Buyurtma to'lovi hozirda amalga oshirilmoqda",
-            ru: "Платеж на этот заказ на данный момент обрабатывается",
-            en: "Order payment is already being processed"
-          }
-        },
-        id: transId
-      };
-    }
-
-
     const transaction = await transactionModel.findOne({ transId }).exec();
 
     if (transaction) {
