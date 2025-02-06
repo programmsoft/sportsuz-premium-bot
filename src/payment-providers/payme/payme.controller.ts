@@ -19,6 +19,9 @@ export class PaymeController {
   @HttpCode(HttpStatus.OK)
   async handleTransactionMethods(@Body() reqBody: RequestBody) {
     console.log("I am being called with reqBody:", reqBody);
-    return await this.paymeService.handleTransactionMethods(reqBody);
+    const result = await this.paymeService.handleTransactionMethods(reqBody);
+
+    console.log("The result is:", result);
+    return result;
   }
 }
