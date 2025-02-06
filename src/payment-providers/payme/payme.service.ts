@@ -56,6 +56,10 @@ export class PaymeService {
 
     const plan = await planModel.findById(planId).exec();
     const user = await userModel.findById(userId).exec();
+    console.log("WATCH! the plan is: ", plan);
+    console.log("WATCH! the user is: ", user);
+
+
 
     if (!plan || !user) {
       return {
