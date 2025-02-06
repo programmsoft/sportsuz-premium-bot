@@ -175,7 +175,7 @@ export class PaymeService {
       const existingActiveTransaction = await transactionModel.findOne({
         userId: userId,
         planId: planId,
-        status: { $in: ['PENDING', 'PAID'] },
+        status:  'PENDING',
         transId: { $ne: transId } // Exclude current transaction
       }).exec();
 
