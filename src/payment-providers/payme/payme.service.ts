@@ -167,7 +167,7 @@ export class PaymeService {
     if (transaction) {
       if (transaction.status !== 'PENDING') {
         return {
-          error: PaymeError.CantDoOperation,
+          error: PaymeError.TransactionInProcess,
           id: transId,
         };
       }
@@ -255,7 +255,7 @@ export class PaymeService {
     if (transaction.status !== 'PENDING') {
       if (transaction.status !== 'PAID') {
         return {
-          error: PaymeError.TransactionInProcess,
+          error: PaymeError.CantDoOperation,
           id: performTransactionDto.params.id,
         };
       }
