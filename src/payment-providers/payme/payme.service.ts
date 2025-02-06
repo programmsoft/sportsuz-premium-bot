@@ -162,6 +162,19 @@ export class PaymeService {
       };
     }
 
+    const existingActiveTransaction = await transactionModel.findOne({
+      userId: userId,
+      planId: planId,
+      status: { $in: ['PENDING', 'PAID'] }  // Check for any active transactions
+    }).exec();
+
+    if (existingActiveTransaction) {
+      return {
+        error: PaymeError.Pending,
+        id: transId
+      };
+    }
+
     const transaction = await transactionModel.findOne({ transId }).exec();
 
     if (transaction) {
