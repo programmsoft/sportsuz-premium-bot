@@ -13,7 +13,11 @@ import { PaymeError } from './constants/payme-error';
 import { CancelingReasons } from './constants/canceling-reasons';
 import {UserModel as userModel} from "../../database/models/user.model";
 import {Plan as planModel} from "../../database/models/plans.model";
-import {Transaction as transactionModel} from "../../database/models/transactions.model";
+import {
+    PaymentProvider,
+    Transaction as transactionModel,
+    TransactionStatus
+} from "../../database/models/transactions.model";
 import {ValidationHelper} from "../../utils/validation.helper";
 
 @Injectable()
@@ -119,133 +123,101 @@ export class PaymeService {
     };
   }
 
-  async createTransaction(createTransactionDto: CreateTransactionDto) {
-    const planId = createTransactionDto.params?.account?.plan_id;
-    const userId = createTransactionDto.params?.account?.user_id;
-    const transId = createTransactionDto.params?.id;
+    async createTransaction(createTransactionDto: CreateTransactionDto) {
+        const planId = createTransactionDto.params?.account?.plan_id;
+        const userId = createTransactionDto.params?.account?.user_id;
+        const transId = createTransactionDto.params?.id;
+        const amount = createTransactionDto.params?.amount;
 
-    if (!ValidationHelper.isValidObjectId(planId)) {
-      return {
-        error: PaymeError.ProductNotFound,
-        id: transId,
-      };
-    }
+        // Validate IDs
+        if (!ValidationHelper.isValidObjectId(planId)) {
+            return {
+                error: PaymeError.ProductNotFound,
+                id: transId,
+            };
+        }
 
-    if (!ValidationHelper.isValidObjectId(userId)) {
-      return {
-        error: PaymeError.UserNotFound,
-        id: transId,
-      };
-    }
+        if (!ValidationHelper.isValidObjectId(userId)) {
+            return {
+                error: PaymeError.UserNotFound,
+                id: transId,
+            };
+        }
 
-    const plan = await planModel.findById(planId).exec();
-    const user = await userModel.findById(userId).exec();
+        // Find plan and user
+        const plan = await planModel.findById(planId).exec();
+        const user = await userModel.findById(userId).exec();
 
-    if (!user) {
-      return {
-        error: PaymeError.UserNotFound,
-        id: transId,
-      };
-    }
+        if (!plan || !user) {
+            return {
+                error: PaymeError.UserNotFound,
+                id: transId,
+            };
+        }
 
-    if (!plan) {
-      return {
-        error: PaymeError.ProductNotFound,
-        id: transId,
-      };
-    }
+        // Validate amount
+        if (amount !== plan.price) {
+            return {
+                error: PaymeError.InvalidAmount,
+                id: transId,
+            };
+        }
 
-    if (createTransactionDto.params.amount !== plan.price) {
-      return {
-        error: PaymeError.InvalidAmount,
-        id: transId,
-      };
-    }
+        // Check for existing transaction
+        const transaction = await transactionModel.findOne({ transId }).exec();
+        if (transaction) {
+            // If transaction exists, check if it's expired
+            if (this.checkTransactionExpiration(transaction.createdAt)) {
+                await transactionModel.findOneAndUpdate(
+                    { transId },
+                    {
+                        status: TransactionStatus.CANCELED,
+                        cancelTime: new Date(),
+                        state: TransactionState.PendingCanceled,
+                        reason: CancelingReasons.CanceledDueToTimeout,
+                    },
+                ).exec();
 
-      const existingActiveTransaction = await transactionModel.findOne({
-          userId: userId,
-          planId: planId,
-          status:  'PENDING',
-      }).exec();
+                return {
+                    error: {
+                        ...PaymeError.CantDoOperation,
+                        state: TransactionState.PendingCanceled,
+                        reason: CancelingReasons.CanceledDueToTimeout,
+                    },
+                    id: transId,
+                };
+            }
 
-      if (existingActiveTransaction) {
-          return {
-              error: PaymeError.TransactionInProcess,
-              id: transId,
-          };
-      }
+            // Return existing transaction info
+            return {
+                result: {
+                    create_time: new Date(transaction.createdAt).getTime(),
+                    transaction: transaction.id,
+                    state: transaction.state
+                }
+            };
+        }
 
-    const transaction = await transactionModel.findOne({ transId }).exec();
+        // Create new transaction
+        const newTransaction = await transactionModel.create({
+            transId,
+            userId,
+            planId,
+            provider: PaymentProvider.PAYME,
+            state: TransactionState.Pending,
+            status: TransactionStatus.PENDING,
+            amount,
+        });
 
-    if (transaction) {
-
-      if (this.checkTransactionExpiration(transaction.createdAt)) {
-        await transactionModel.findOneAndUpdate(
-            { transId },
-            {
-              status: 'CANCELED',
-              cancelTime: new Date(),
-              state: TransactionState.PendingCanceled,
-              reason: CancelingReasons.CanceledDueToTimeout,
-            },
-        ).exec();
-
+        // Return result according to specification
         return {
-          error: {
-            ...PaymeError.CantDoOperation,
-            state: TransactionState.PendingCanceled,
-            reason: CancelingReasons.CanceledDueToTimeout,
-          },
-          id: transId,
+            result: {
+                create_time: new Date(newTransaction.createdAt).getTime(),
+                transaction: newTransaction.id,
+                state: TransactionState.Pending
+            }
         };
-      }
-
-      return {
-        result: {
-          transaction: transaction.id,
-          state: TransactionState.Pending,
-          create_time: new Date(transaction.createdAt).getTime(),
-        },
-      };
     }
-
-    const checkTransaction: CheckPerformTransactionDto = {
-      method: TransactionMethods.CheckPerformTransaction,
-      params: {
-        amount: plan.price,
-        account: {
-          plan_id: planId,
-          user_id: userId,
-        },
-      },
-    };
-
-    const checkResult = await this.checkPerformTransaction(checkTransaction);
-
-    if (checkResult.error) {
-      return {
-        error: checkResult.error,
-        id: transId,
-      };
-    }
-
-    const newTransaction = await transactionModel.create({
-      transId: createTransactionDto.params.id,
-      userId: createTransactionDto.params.account.user_id,
-      planId: createTransactionDto.params.account.plan_id,
-      provider: 'payme',
-      state: TransactionState.Pending,
-      amount: createTransactionDto.params.amount,
-    });
-
-    return {
-      result: {
-        transaction: newTransaction.id,
-        state: TransactionState.Pending,
-        create_time: new Date(newTransaction.createdAt).getTime(),
-      },
-    };
-  }
 
   async performTransaction(performTransactionDto: PerformTransactionDto) {
     const transaction = await transactionModel
