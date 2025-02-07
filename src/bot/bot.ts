@@ -345,39 +345,72 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
             });
 
             if (!plan) {
-                // Handle the case where no plan is found
                 logger.error('No plan found with name "Basic"');
                 return;
             }
 
-            const subscription = await this.subscriptionService.renewSubscription(user._id as string, plan);
-
-            if (!subscription) {
-                const keyboard = new InlineKeyboard()
-                    .text("🎯 Obuna bo'lish", "subscribe");
-
-                await ctx.editMessageText(
-                    "Obuna topilmadi 🤷‍♂️\nObuna bo'lish uchun quyidagi tugmani bosing:",
-                    {reply_markup: keyboard}
-                );
-                return;
-            }
-
-            const privateLink = await this.getPrivateLink();
+            // Generate PayMe checkout link for renewal
+            const paymeCheckoutPageLink = generatePaymeLink({
+                planId: plan._id as string,
+                amount: plan.price,
+                userId: user._id as string
+            });
 
             const keyboard = new InlineKeyboard()
-                .url("🔗 Kanalga kirish", privateLink.invite_link)
+                .url(
+                    `Yangilash - ${plan.price} so'm / ${plan.duration} kun`,
+                    paymeCheckoutPageLink
+                )
                 .row()
                 .text("🔙 Asosiy menyu", "main_menu");
 
-
             await ctx.editMessageText(
-                `✅ Obuna muvaffaqiyatli yangilandi!\n\n⏰ Yangi muddat: ${subscription.subscriptionEnd.toLocaleDateString()}`,
+                "🔄 Obunani yangilash uchun to'lov tugmasini bosing:",
                 {reply_markup: keyboard}
             );
         } catch (error) {
             logger.error('Renewal error:', error);
             await ctx.answerCallbackQuery("Obunani yangilashda xatolik yuz berdi.");
+        }
+    }
+
+    // Method to handle successful renewal payment callback
+    private async handleRenewalSuccess(userId: string): Promise<void> {
+        try {
+            const user = await UserModel.findById(userId);
+            if (!user) {
+                logger.error('User not found for renewal success handling');
+                return;
+            }
+
+            const plan = await Plan.findOne({ name: 'Basic' });
+            if (!plan) {
+                logger.error('No plan found with name "Basic"');
+                return;
+            }
+
+            const subscription = await this.subscriptionService.renewSubscription(userId, plan);
+            if (!subscription) {
+                logger.error('Failed to renew subscription after payment');
+                return;
+            }
+
+            // Send success message to user
+            const privateLink = await this.getPrivateLink();
+            const keyboard = new InlineKeyboard()
+                .url("🔗 Kanalga kirish", privateLink.invite_link)
+                .row()
+                .text("🔙 Asosiy menyu", "main_menu");
+
+            await this.bot.api.sendMessage(
+                user.telegramId,
+                `✅ Obuna muvaffaqiyatli yangilandi!\n\n⏰ Yangi muddat: ${subscription.subscriptionEnd.toLocaleDateString()}`,
+                {
+                    reply_markup: keyboard
+                }
+            );
+        } catch (error) {
+            logger.error('Error handling renewal success:', error);
         }
     }
 
