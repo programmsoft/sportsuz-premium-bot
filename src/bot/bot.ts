@@ -313,6 +313,7 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
     private async getPrivateLink() {
         try {
             // Create a permanent invite link with no expiration and single-use
+            logger.info('Generating private channel invite link with channelId: ', config.CHANNEL_ID);
             const link = await this.bot.api.createChatInviteLink(config.CHANNEL_ID, {
                 member_limit: 1,
                 // should be set to another value later
