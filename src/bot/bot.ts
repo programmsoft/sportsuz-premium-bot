@@ -46,7 +46,7 @@ export class SubscriptionBot {
             } catch (error) {
                 logger.error('Error in subscription cleanup job:', error);
             }
-        }, 1000 * 60 * 60); // 1 hour
+        }, 1000 * 60 * 60 * 24 * 3); // 1 hour
 
         await this.bot.start({
             onStart: () => {
