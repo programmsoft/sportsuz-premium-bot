@@ -183,6 +183,7 @@ export class PaymeService {
 
     const transaction = await transactionModel.findOne({ transId }).exec();
 
+    if (transaction) {
 
       if (this.checkTransactionExpiration(transaction.createdAt)) {
         await transactionModel.findOneAndUpdate(
