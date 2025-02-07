@@ -137,11 +137,27 @@ export class SubscriptionBot {
                 return;
             }
 
+            // If user has never had a subscription, show different message
+            if (!user.subscriptionStart && !user.subscriptionEnd) {
+                const keyboard = new InlineKeyboard()
+                    .text("🎯 Obuna bo'lish", "subscribe")
+                    .row()
+                    .text("🔙 Asosiy menyu", "main_menu");
+
+                await ctx.editMessageText(
+                    "Siz hali obuna bo'lmagansiz 🤷‍♂️\nObuna bo'lish uchun quyidagi tugmani bosing:",
+                    {reply_markup: keyboard}
+                );
+                return;
+            }
+
             const subscription = await this.subscriptionService.getSubscription(user._id as string);
 
             if (!subscription) {
                 const keyboard = new InlineKeyboard()
-                    .text("🎯 Obuna bo'lish", "subscribe");
+                    .text("🎯 Obuna bo'lish", "subscribe")
+                    .row()
+                    .text("🔙 Asosiy menyu", "main_menu");
 
                 await ctx.editMessageText(
                     "Hech qanday obuna topilmadi 🤷‍♂️\nObuna bo'lish uchun quyidagi tugmani bosing:",
@@ -155,15 +171,25 @@ export class SubscriptionBot {
                 ? '⏰ Obuna tugash muddati:'
                 : '⏰ Obuna tamomlangan sana:';
 
+            let subscriptionStartDate = 'Mavjud emas';
+            let subscriptionEndDate = 'Mavjud emas';
+
+            if (subscription.subscriptionStart) {
+                subscriptionStartDate = subscription.subscriptionStart.toLocaleDateString();
+            }
+            if (subscription.subscriptionEnd) {
+                subscriptionEndDate = subscription.subscriptionEnd.toLocaleDateString();
+            }
+
             const message = `🎫 <b>Obuna ma'lumotlari:</b>\n
 📅 Holati: ${status}
-📆 Obuna bo'lgan sana: ${subscription.subscriptionStart?.toLocaleDateString()}
-${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
+📆 Obuna bo'lgan sana: ${subscriptionStartDate}
+${expirationLabel} ${subscriptionEndDate}`;
 
             const keyboard = new InlineKeyboard();
 
-            const privateLink = await this.getPrivateLink();
             if (subscription.isActive) {
+                const privateLink = await this.getPrivateLink();
                 keyboard.text("❌ Obunani bekor qilish", "cancel_subscription");
                 keyboard.row()
                 keyboard.url("🔗 Kanalga kirish", privateLink.invite_link)
