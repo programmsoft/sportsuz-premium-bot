@@ -174,15 +174,15 @@ export class PaymeService {
       status: TransactionStatus.PENDING
     }).exec();
 
+    if (existingTransaction) {
+      return {
+        error: PaymeError.TransactionInProcess,
+        id: transId,
+      };
+    }
+
     const transaction = await transactionModel.findOne({ transId }).exec();
 
-    if (transaction) {
-      if (transaction.status !== 'PENDING') {
-        return {
-          error: PaymeError.TransactionInProcess,
-          id: transId,
-        };
-      }
 
       if (this.checkTransactionExpiration(transaction.createdAt)) {
         await transactionModel.findOneAndUpdate(
@@ -230,13 +230,6 @@ export class PaymeService {
     if (checkResult.error) {
       return {
         error: checkResult.error,
-        id: transId,
-      };
-    }
-
-    if (existingTransaction?.transId !== transId) {
-      return {
-        error: PaymeError.TransactionInProcess,
         id: transId,
       };
     }
