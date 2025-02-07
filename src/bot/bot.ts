@@ -162,8 +162,11 @@ ${expirationLabel} ${subscription.subscriptionEnd?.toLocaleDateString()}`;
 
             const keyboard = new InlineKeyboard();
 
+            const privateLink = await this.getPrivateLink();
             if (subscription.isActive) {
                 keyboard.text("❌ Obunani bekor qilish", "cancel_subscription");
+                keyboard.row()
+                keyboard.url("🔗 Kanalga kirish", privateLink.invite_link)
             } else {
                 keyboard.text("🎯 Qayta obuna bo'lish", "subscribe");
             }
