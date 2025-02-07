@@ -175,10 +175,20 @@ export class PaymeService {
     }).exec();
 
     if (existingTransaction) {
-      return {
-        error: PaymeError.TransactionInProcess,
-        id: transId,
-      };
+      if (existingTransaction.transId === transId) {
+        return {
+          result: {
+            transaction: existingTransaction.id,
+            state: TransactionState.Pending,
+            create_time: new Date(existingTransaction.createdAt).getTime(),
+          },
+        };
+      } else {
+        return {
+          error: PaymeError.TransactionInProcess,
+          id: transId,
+        };
+      }
     }
 
     const transaction = await transactionModel.findOne({ transId }).exec();
