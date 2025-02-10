@@ -422,6 +422,8 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
+            await this.bot.api.unbanChatMember(config.CHANNEL_ID, user.telegramId);
+
             // Send success message to user
             const privateLink = await this.getPrivateLink();
             const keyboard = new InlineKeyboard()
