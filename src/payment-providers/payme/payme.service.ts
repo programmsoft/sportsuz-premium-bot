@@ -107,7 +107,7 @@ export class PaymeService {
       };
     }
 
-    if (plan.price !== checkPerformTransactionDto.params.amount) {
+    if (plan.price !== checkPerformTransactionDto.params.amount/100) {
       return {
         error: PaymeError.InvalidAmount,
       };
@@ -161,7 +161,7 @@ export class PaymeService {
       };
     }
 
-    if (createTransactionDto.params.amount !== plan.price) {
+    if (createTransactionDto.params.amount/100 !== plan.price) {
       return {
         error: PaymeError.InvalidAmount,
         id: transId,
