@@ -161,7 +161,9 @@ export class PaymeService {
       };
     }
 
+    console.log("the amount in tiyns is: ", createTransactionDto.params.amount)
     if (createTransactionDto.params.amount/100 !== plan.price) {
+      console.log("the amount in sum is: ", createTransactionDto.params.amount/100 )
       return {
         error: PaymeError.InvalidAmount,
         id: transId,
