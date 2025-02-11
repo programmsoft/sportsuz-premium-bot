@@ -88,7 +88,7 @@ export class SubscriptionMonitorService {
 
             // Then kick them out (ban until current time + 32 seconds)
             // This effectively just removes them from the channel without banning
-            const kickUntil = Math.floor(Date.now() / 1000) + 32;
+            const kickUntil = Math.floor(Date.now() / 1000) + 15;
             await this.bot.api.banChatMember(config.CHANNEL_ID, user.telegramId, {
                 until_date: kickUntil
             });

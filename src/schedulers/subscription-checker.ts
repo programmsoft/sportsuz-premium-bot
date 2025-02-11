@@ -22,8 +22,8 @@ export class SubscriptionChecker {
         // Then run every 24 hours
         this.checkInterval = setInterval(() => {
             this.runChecks();
-        }, 1000 * 60); // 24 hours
-// 24 * 60 * 60 * 1000
+        }, 24 * 60 * 60 * 1000); // 24 hours
+//
         logger.info('Subscription checker started');
     }
 
