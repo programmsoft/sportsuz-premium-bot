@@ -5,6 +5,8 @@ import logger from '../utils/logger';
 import {Plan} from "../database/models/plans.model";
 import {UserModel} from "../database/models/user.model";
 import {generatePaymeLink} from "../shared/generators/payme-link.generator";
+import { SubscriptionMonitorService } from '../services/subscription-monitor.service';
+import { SubscriptionChecker } from '../schedulers/subscription-checker';
 
 
 interface SessionData {
@@ -18,10 +20,14 @@ type BotContext = Context & SessionFlavor<SessionData>;
 export class SubscriptionBot {
     private bot: Bot<BotContext>;
     private subscriptionService: SubscriptionService;
+    private subscriptionMonitorService: SubscriptionMonitorService;
+    private subscriptionChecker: SubscriptionChecker;
 
     constructor() {
         this.bot = new Bot<BotContext>(config.BOT_TOKEN);
         this.subscriptionService = new SubscriptionService();
+        this.subscriptionMonitorService = new SubscriptionMonitorService(this.bot);
+        this.subscriptionChecker = new SubscriptionChecker(this.subscriptionMonitorService);
         this.setupMiddleware();
         this.setupHandlers();
     }
@@ -31,18 +37,7 @@ export class SubscriptionBot {
             try {
                 logger.info('Running subscription cleanup job...'); // Debug log
 
-                // First deactivate expired subscriptions
-                await this.subscriptionService.deactivateExpiredSubscriptions();
-                logger.info('Deactivated expired subscriptions'); // Debug log
-
-                // Get list of expired users
-                const expiredUsers = await this.subscriptionService.listExpiredSubscriptions();
-                logger.info(`Found ${expiredUsers.length} expired subscriptions`); // Debug log
-
-                // Process each expired user
-                for (const user of expiredUsers) {
-                    logger.info(`Processing expired user: ${user._id}`); // Debug log
-                }
+                this.subscriptionChecker.start();
             } catch (error) {
                 logger.error('Error in subscription cleanup job:', error);
             }
@@ -91,6 +86,9 @@ export class SubscriptionBot {
             'main_menu': this.showMainMenu.bind(this),
             'confirm_subscribe_basic': this.confirmSubscription.bind(this),
             'cancel_subscription': this.handleCancelSubscription.bind(this),
+
+            // test
+            'dev_test_subscribe': this.handleDevTestSubscribe.bind(this),
         };
 
         const handler = handlers[data];
@@ -127,6 +125,74 @@ export class SubscriptionBot {
         await this.showMainMenu(ctx);
     }
 
+    // TEST
+    private async handleDevTestSubscribe(ctx: BotContext): Promise<void> {
+        try {
+            const telegramId = ctx.from?.id;
+            const user = await UserModel.findOne({telegramId});
+            if (!user) {
+                await ctx.answerCallbackQuery("Foydalanuvchi ID'sini olishda xatolik yuz berdi.");
+                return;
+            }
+
+            const plan = await Plan.findOne({
+                name: 'Basic'
+            });
+
+            if (!plan) {
+                logger.error('No plan found with name "Basic"');
+                return;
+            }
+
+            try {
+                const {user: subscription, wasKickedOut} = await this.subscriptionService.createSubscription(
+                    user._id as string,
+                    plan,
+                    ctx.from?.username
+                );
+
+                const privateLink = await this.getPrivateLink();
+                const keyboard = new InlineKeyboard()
+                    .url("🔗 Kanalga kirish", privateLink.invite_link)
+                    .row()
+                    .text("🔙 Asosiy menyu", "main_menu");
+
+                let messageText = `🎉 DEV TEST: Muvaffaqiyatli obuna bo'ldingiz!\n\n` +
+                    `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n` +
+                    `[DEV MODE] To'lov talab qilinmadi\n\n`;
+
+                if (wasKickedOut) {
+                    messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. `;
+                }
+
+                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:`;
+
+                await ctx.editMessageText(messageText, {
+                    reply_markup: keyboard,
+                    parse_mode: "HTML"
+                });
+
+            } catch (error) {
+                if (error instanceof Error && error.message === 'User already has an active subscription') {
+                    const keyboard = new InlineKeyboard()
+                        .text("📊 Obuna holati", "check_status")
+                        .row()
+                        .text("🔙 Asosiy menyu", "main_menu");
+
+                    await ctx.editMessageText(
+                        "⚠️ Siz allaqachon faol obunaga egasiz. Obuna holatini tekshirish uchun quyidagi tugmani bosing:",
+                        {reply_markup: keyboard}
+                    );
+                    return;
+                }
+                logger.error('Dev test subscription error:', error);
+                await ctx.answerCallbackQuery("Obunani tasdiqlashda xatolik yuz berdi.");
+            }
+        } catch (error) {
+            logger.error('Dev test subscription error:', error);
+            await ctx.answerCallbackQuery("Dev test obunasini yaratishda xatolik yuz berdi.");
+        }
+    }
     private async handleStatus(ctx: BotContext): Promise<void> {
         try {
             const telegramId = ctx.from?.id;
@@ -251,12 +317,16 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 userId: user._id as string
             });
 
-            keyboard.url(
-                `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-                paymeCheckoutPageLink
-            );
-
-            keyboard.text("🔙 Asosiy menyu", "main_menu");
+            keyboard
+                .url(
+                    `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
+                    paymeCheckoutPageLink
+                )
+                .row()
+                // TEST
+                .text("🔧 DEV TEST: Free Subscribe", "dev_test_subscribe")
+                .row()
+                .text("🔙 Asosiy menyu", "main_menu");
 
             await ctx.editMessageText(
                 "🎯 Iltimos, o'zingizga ma'qul obuna turini tanlang:",
