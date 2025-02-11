@@ -16,6 +16,7 @@ export function generatePaymeLink(params: PaymeLinkGeneratorParams): string {
     const paramsInString = `m=${merchantId};ac.plan_id=${params.planId};ac.user_id=${params.userId};a=${amountInTiyns}`;
     logger.info(paramsInString);
     const encodedParams = base64Encode(paramsInString);
+    console.log(amountInTiyns);
     return `${PAYME_CHECKOUT_URL}/${encodedParams}`;
 }
 
