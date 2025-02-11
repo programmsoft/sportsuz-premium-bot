@@ -33,15 +33,8 @@ export class SubscriptionBot {
     }
 
     public async start(): Promise<void> {
-        setInterval(async () => {
-            try {
-                logger.info('Running subscription cleanup job...'); // Debug log
-
-                this.subscriptionChecker.start();
-            } catch (error) {
-                logger.error('Error in subscription cleanup job:', error);
-            }
-        }, 1000 * 120);
+        // Just start the checker once
+        this.subscriptionChecker.start();
 
         await this.bot.start({
             onStart: () => {
