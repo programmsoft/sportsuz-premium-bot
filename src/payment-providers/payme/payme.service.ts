@@ -113,7 +113,7 @@ export class PaymeService {
       };
     }
 
-    if (plan.price !== checkPerformTransactionDto.params.amount/100) {
+    if (plan.price !== checkPerformTransactionDto.params.amount) {
       return {
         error: PaymeError.InvalidAmount,
       };
@@ -168,8 +168,8 @@ export class PaymeService {
     }
 
     console.log("the amount in tiyns is: ", createTransactionDto.params.amount)
-    if (createTransactionDto.params.amount/100 !== plan.price) {
-      console.log("the amount in sum is: ", createTransactionDto.params.amount/100 )
+    if (createTransactionDto.params.amount !== plan.price) {
+      console.log("the amount in sum is: ", createTransactionDto.params.amount )
       return {
         error: PaymeError.InvalidAmount,
         id: transId,

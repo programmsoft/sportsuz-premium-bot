@@ -120,6 +120,8 @@ export class SubscriptionBot {
 
 
     async handlePaymentSuccess(userId: string, telegramId: number, username?: string): Promise<void> {
+        console.log("WATCH! @@@ handlePaymentSuccess is being called! ");
+
         try {
             const plan = await Plan.findOne({ name: 'Basic' });
 
@@ -158,6 +160,7 @@ export class SubscriptionBot {
                     parse_mode: "HTML"
                 }
             );
+            console.log("WATCH! @@@ handlePaymentSuccess sent the message");
 
         } catch (error) {
             logger.error('Payment success handling error:', error);
