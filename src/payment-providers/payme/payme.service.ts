@@ -11,14 +11,20 @@ import { TransactionState } from './constants/transaction-state';
 import { CheckTransactionDto } from './dto/check-transaction.dto';
 import { PaymeError } from './constants/payme-error';
 import { CancelingReasons } from './constants/canceling-reasons';
-import {UserModel as userModel} from "../../database/models/user.model";
+import {UserModel, UserModel as userModel} from "../../database/models/user.model";
 import {Plan as planModel} from "../../database/models/plans.model";
 import {Transaction as transactionModel, TransactionStatus} from "../../database/models/transactions.model";
 import {ValidationHelper} from "../../utils/validation.helper";
+import {SubscriptionBot} from "../../bot/bot";
+import logger from "../../utils/logger";
 
 @Injectable()
 export class PaymeService {
-  constructor() {}
+
+  private readonly botService: SubscriptionBot;
+  constructor() {
+    this.botService = new SubscriptionBot(); // Manually instantiate it
+  }
 
   async handleTransactionMethods(reqBody: RequestBody) {
     console.log("WATCH the request body: ", reqBody)
@@ -337,6 +343,20 @@ export class PaymeService {
             { new: true },
         )
         .exec();
+
+    try {
+      const user = await UserModel.findById(transaction.userId).exec();
+      if (user) {
+        await this.botService.handlePaymentSuccess(
+            transaction.userId.toString(),
+            user.telegramId,
+            user.username
+        );
+      }
+    } catch (error) {
+      logger.error('Error handling payment success:', error);
+      // Continue with the response even if notification fails
+    }
 
     return {
       result: {

@@ -118,6 +118,57 @@ export class SubscriptionBot {
         await this.showMainMenu(ctx);
     }
 
+
+    async handlePaymentSuccess(userId: string, telegramId: number, username?: string): Promise<void> {
+        try {
+            const plan = await Plan.findOne({ name: 'Basic' });
+
+            if (!plan) {
+                logger.error('No plan found with name "Basic"');
+                return;
+            }
+
+            const { user: subscription, wasKickedOut } = await this.subscriptionService.createSubscription(
+                userId,
+                plan,
+                username
+            );
+
+            const privateLink = await this.getPrivateLink();
+            const keyboard = new InlineKeyboard()
+                .url("🔗 Kanalga kirish", privateLink.invite_link)
+                .row()
+                .text("🔙 Asosiy menyu", "main_menu");
+
+            let messageText = `🎉 Tabriklaymiz! To'lov muvaffaqiyatli amalga oshirildi!\n\n` +
+                `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
+
+            if (wasKickedOut) {
+                messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. ` +
+                    `Quyidagi havola orqali kanalga qayta kirishingiz mumkin:`;
+            } else {
+                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:`;
+            }
+
+            await this.bot.api.sendMessage(
+                telegramId,
+                messageText,
+                {
+                    reply_markup: keyboard,
+                    parse_mode: "HTML"
+                }
+            );
+
+        } catch (error) {
+            logger.error('Payment success handling error:', error);
+            // Optionally send error message to user
+            await this.bot.api.sendMessage(
+                telegramId,
+                "⚠️ To'lov amalga oshirildi, lekin obunani faollashtirish bilan bog'liq muammo yuzaga keldi. Iltimos, administrator bilan bog'laning."
+            );
+        }
+    }
+
     // TEST
     private async handleDevTestSubscribe(ctx: BotContext): Promise<void> {
         try {
