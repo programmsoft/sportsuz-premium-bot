@@ -114,7 +114,7 @@ export class PaymeService {
         }
 
         console.log("AMOUNT is: ", checkPerformTransactionDto.params.amount );
-        if (plan.price !== checkPerformTransactionDto.params.amount / 100) {
+        if (plan.price !== checkPerformTransactionDto.params.amount) {
             console.log("Xato shuyerda bo'lishi mumkin");
             return {
                 error: PaymeError.InvalidAmount,
