@@ -303,7 +303,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
 
             if (subscription.isActive) {
                 const privateLink = await this.getPrivateLink();
-                keyboard.text("❌ Obunani bekor qilish", "cancel_subscription");
+                // keyboard.text("❌ Obunani bekor qilish", "cancel_subscription");
                 keyboard.row()
                 keyboard.url("🔗 Kanalga kirish", privateLink.invite_link)
             } else {
