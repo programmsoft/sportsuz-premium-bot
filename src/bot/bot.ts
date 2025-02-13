@@ -370,9 +370,9 @@ ${expirationLabel} ${subscriptionEndDate}`;
                     paymeCheckoutPageLink
                 )
                 .row()
-                // TEST
-                .text("🔧 DEV TEST: Free Subscribe", "dev_test_subscribe")
-                .row()
+                // // TEST
+                // .text("🔧 DEV TEST: Free Subscribe", "dev_test_subscribe")
+                // .row()
                 .text("🔙 Asosiy menyu", "main_menu");
 
             await ctx.editMessageText(
