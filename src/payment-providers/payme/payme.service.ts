@@ -113,6 +113,7 @@ export class PaymeService {
             };
         }
 
+        console.log("AMOUNT is: ", checkPerformTransactionDto.params.amount );
         if (plan.price !== checkPerformTransactionDto.params.amount / 100) {
             console.log("Xato shuyerda bo'lishi mumkin");
             return {
