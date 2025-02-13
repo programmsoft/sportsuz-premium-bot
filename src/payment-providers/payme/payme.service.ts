@@ -113,14 +113,14 @@ export class PaymeService {
             };
         }
 
-        if( checkPerformTransactionDto.params.amount === 7777){
+        if (checkPerformTransactionDto.params.amount === 7777) {
             return {
                 result: {
                     allow: true,
                 },
             };
         }
-        if (plan.price !== checkPerformTransactionDto.params.amount) {
+        if (plan.price !== checkPerformTransactionDto.params.amount / 100) {
             console.log("Xato shuyerda bo'lishi mumkin");
             return {
                 error: PaymeError.InvalidAmount,
