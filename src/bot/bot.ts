@@ -5,8 +5,9 @@ import logger from '../utils/logger';
 import {Plan} from "../database/models/plans.model";
 import {UserModel} from "../database/models/user.model";
 import {generatePaymeLink} from "../shared/generators/payme-link.generator";
-import { SubscriptionMonitorService } from '../services/subscription-monitor.service';
-import { SubscriptionChecker } from '../schedulers/subscription-checker';
+import {SubscriptionMonitorService} from '../services/subscription-monitor.service';
+import {SubscriptionChecker} from '../schedulers/subscription-checker';
+import {ClickRedirectParams, getClickRedirectLink} from "../shared/generators/click-redirect-link.generator";
 
 
 interface SessionData {
@@ -41,6 +42,59 @@ export class SubscriptionBot {
                 logger.info('Bot started');
             }
         });
+    }
+
+    async handlePaymentSuccess(userId: string, telegramId: number, username?: string): Promise<void> {
+        console.log("WATCH! @@@ handlePaymentSuccess is being called! ");
+
+        try {
+            const plan = await Plan.findOne({name: 'Basic'});
+
+            if (!plan) {
+                logger.error('No plan found with name "Basic"');
+                return;
+            }
+
+            const {user: subscription, wasKickedOut} = await this.subscriptionService.createSubscription(
+                userId,
+                plan,
+                username
+            );
+
+            const privateLink = await this.getPrivateLink();
+            const keyboard = new InlineKeyboard()
+                .url("🔗 Kanalga kirish", privateLink.invite_link)
+                .row()
+                .text("🔙 Asosiy menyu", "main_menu");
+
+            let messageText = `🎉 Tabriklaymiz! To'lov muvaffaqiyatli amalga oshirildi!\n\n` +
+                `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
+
+            if (wasKickedOut) {
+                messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. ` +
+                    `Quyidagi havola orqali kanalga qayta kirishingiz mumkin:`;
+            } else {
+                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:`;
+            }
+
+            await this.bot.api.sendMessage(
+                telegramId,
+                messageText,
+                {
+                    reply_markup: keyboard,
+                    parse_mode: "HTML"
+                }
+            );
+            console.log("WATCH! @@@ handlePaymentSuccess sent the message");
+
+        } catch (error) {
+            logger.error('Payment success handling error:', error);
+            // Optionally send error message to user
+            await this.bot.api.sendMessage(
+                telegramId,
+                "⚠️ To'lov amalga oshirildi, lekin obunani faollashtirish bilan bog'liq muammo yuzaga keldi. Iltimos, administrator bilan bog'laning."
+            );
+        }
     }
 
     private setupMiddleware(): void {
@@ -119,60 +173,6 @@ export class SubscriptionBot {
         await this.showMainMenu(ctx);
     }
 
-
-    async handlePaymentSuccess(userId: string, telegramId: number, username?: string): Promise<void> {
-        console.log("WATCH! @@@ handlePaymentSuccess is being called! ");
-
-        try {
-            const plan = await Plan.findOne({ name: 'Basic' });
-
-            if (!plan) {
-                logger.error('No plan found with name "Basic"');
-                return;
-            }
-
-            const { user: subscription, wasKickedOut } = await this.subscriptionService.createSubscription(
-                userId,
-                plan,
-                username
-            );
-
-            const privateLink = await this.getPrivateLink();
-            const keyboard = new InlineKeyboard()
-                .url("🔗 Kanalga kirish", privateLink.invite_link)
-                .row()
-                .text("🔙 Asosiy menyu", "main_menu");
-
-            let messageText = `🎉 Tabriklaymiz! To'lov muvaffaqiyatli amalga oshirildi!\n\n` +
-                `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
-
-            if (wasKickedOut) {
-                messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. ` +
-                    `Quyidagi havola orqali kanalga qayta kirishingiz mumkin:`;
-            } else {
-                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:`;
-            }
-
-            await this.bot.api.sendMessage(
-                telegramId,
-                messageText,
-                {
-                    reply_markup: keyboard,
-                    parse_mode: "HTML"
-                }
-            );
-            console.log("WATCH! @@@ handlePaymentSuccess sent the message");
-
-        } catch (error) {
-            logger.error('Payment success handling error:', error);
-            // Optionally send error message to user
-            await this.bot.api.sendMessage(
-                telegramId,
-                "⚠️ To'lov amalga oshirildi, lekin obunani faollashtirish bilan bog'liq muammo yuzaga keldi. Iltimos, administrator bilan bog'laning."
-            );
-        }
-    }
-
     // TEST
     private async handleDevTestSubscribe(ctx: BotContext): Promise<void> {
         try {
@@ -241,6 +241,7 @@ export class SubscriptionBot {
             await ctx.answerCallbackQuery("Dev test obunasini yaratishda xatolik yuz berdi.");
         }
     }
+
     private async handleStatus(ctx: BotContext): Promise<void> {
         try {
             const telegramId = ctx.from?.id;
@@ -416,7 +417,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 let messageText = `🎉 Tabriklaymiz! Siz muvaffaqiyatli obuna bo'ldingiz!\n\n` +
                     `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
 
-                    messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:\n\n`;
+                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:\n\n`;
 
 
                 await ctx.editMessageText(messageText, {
@@ -514,7 +515,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
-            const plan = await Plan.findOne({ name: 'Basic' });
+            const plan = await Plan.findOne({name: 'Basic'});
             if (!plan) {
                 logger.error('No plan found with name "Basic"');
                 return;
@@ -592,17 +593,26 @@ ${expirationLabel} ${subscriptionEndDate}`;
             await newUser.save();
         }
     }
+
     private async getPaymentMethodKeyboard(plan: any, userId: string) {
+
+        const redirectURLParams: ClickRedirectParams = {
+            userId: userId,
+            planId: plan._id,
+            amount: plan.price,
+        };
+
         const paymeCheckoutPageLink = generatePaymeLink({
             planId: plan._id as string,
             amount: plan.price,
             userId: userId
         });
+        const clickUrl = getClickRedirectLink(redirectURLParams);
 
         return new InlineKeyboard()
             .url('📲 Payme orqali to\'lash', paymeCheckoutPageLink)
             // Uncomment when Click integration is ready
-            .url('💳 Click orqali to\'lash', paymeCheckoutPageLink)
+            .url('💳 Click orqali to\'lash', clickUrl)
 
             .row()
             .text("🔙 Asosiy menyu", "main_menu");
