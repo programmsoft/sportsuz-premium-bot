@@ -78,10 +78,11 @@ export class SubscriptionBot {
             'renew': this.handleRenew.bind(this),
             'main_menu': this.showMainMenu.bind(this),
             'confirm_subscribe_basic': this.confirmSubscription.bind(this),
-            'cancel_subscription': this.handleCancelSubscription.bind(this),
+
+            // 'cancel_subscription': this.handleCancelSubscription.bind(this),
 
             // test
-            'dev_test_subscribe': this.handleDevTestSubscribe.bind(this),
+            // 'dev_test_subscribe': this.handleDevTestSubscribe.bind(this),
         };
 
         const handler = handlers[data];
@@ -343,7 +344,6 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
-            const keyboard = new InlineKeyboard();
             const plan = await Plan.findOne({
                 name: 'Basic'
             });
@@ -353,30 +353,27 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
-            // keyboard.text(
-            //     `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-            //     `confirm_subscribe_basic`
-            // );
-
+            // Option 1: Keep using current Payme implementation
             const paymeCheckoutPageLink = generatePaymeLink({
                 planId: plan._id as string,
                 amount: plan.price,
                 userId: user._id as string
             });
 
-            keyboard
-                .url(
-                    `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
-                    paymeCheckoutPageLink
-                )
-                .row()
-                // // TEST
-                // .text("🔧 DEV TEST: Free Subscribe", "dev_test_subscribe")
-                // .row()
-                .text("🔙 Asosiy menyu", "main_menu");
+            // const keyboard = new InlineKeyboard()
+            //     .url(
+            //         `${plan.name} - ${plan.price} so'm / ${plan.duration} kun`,
+            //         paymeCheckoutPageLink
+            //     )
+            //     .row()
+            //     .text("🔙 Asosiy menyu", "main_menu");
+
+            // Option 2: Uncomment to use payment method selection
+            const keyboard = await this.getPaymentMethodKeyboard(plan, user._id as string);
+
 
             await ctx.editMessageText(
-                "🎯 Iltimos, o'zingizga ma'qul obuna turini tanlang:",
+                "🎯 Iltimos, o'zingizga ma'qul to'lov turini tanlang:",
                 {reply_markup: keyboard}
             );
         } catch (error) {
@@ -419,12 +416,8 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 let messageText = `🎉 Tabriklaymiz! Siz muvaffaqiyatli obuna bo'ldingiz!\n\n` +
                     `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
 
-                if (wasKickedOut) {
-                    messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. ` +
-                        `Quyidagi havola orqali kanalga qayta kirishingiz mumkin:\n\n`;
-                } else {
                     messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:\n\n`;
-                }
+
 
                 await ctx.editMessageText(messageText, {
                     reply_markup: keyboard,
@@ -500,16 +493,10 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 userId: user._id as string
             });
 
-            const keyboard = new InlineKeyboard()
-                .url(
-                    `Yangilash - ${plan.price} so'm / ${plan.duration} kun`,
-                    paymeCheckoutPageLink
-                )
-                .row()
-                .text("🔙 Asosiy menyu", "main_menu");
+            const keyboard = await this.getPaymentMethodKeyboard(plan, user._id as string);
 
             await ctx.editMessageText(
-                "🔄 Obunani yangilash uchun to'lov tugmasini bosing:",
+                "🔄 Obunani yangilash uchun to'lov turini tanglang:",
                 {reply_markup: keyboard}
             );
         } catch (error) {
@@ -569,6 +556,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
+
             const success = await this.subscriptionService.cancelSubscription(user._id as string);
 
             if (success) {
@@ -603,6 +591,21 @@ ${expirationLabel} ${subscriptionEndDate}`;
             });
             await newUser.save();
         }
+    }
+    private async getPaymentMethodKeyboard(plan: any, userId: string) {
+        const paymeCheckoutPageLink = generatePaymeLink({
+            planId: plan._id as string,
+            amount: plan.price,
+            userId: userId
+        });
+
+        return new InlineKeyboard()
+            .url('📲 Payme orqali to\'lash', paymeCheckoutPageLink)
+            // Uncomment when Click integration is ready
+            .url('💳 Click orqali to\'lash', paymeCheckoutPageLink)
+
+            .row()
+            .text("🔙 Asosiy menyu", "main_menu");
     }
 
 
