@@ -7,6 +7,7 @@ import {UserModel} from "../../database/models/user.model";
 import {Plan} from "../../database/models/plans.model";
 import {SubscriptionBot} from "../../bot/bot";
 import {generateMD5} from "../../utils/hashing/hasher.helper";
+import logger from "../../utils/logger";
 
 
 @Injectable()
@@ -43,6 +44,7 @@ export class ClickService {
     }
 
     async prepare(clickReqBody: ClickRequest) {
+        console.log("I am being called: prepare method. The first line of the method")
         const planId = clickReqBody.merchant_trans_id;
         const userId = clickReqBody.param2;
         const amount = clickReqBody.amount;
@@ -275,7 +277,22 @@ export class ClickService {
         });
 
 
-        // await this.botService.getSuccessPaymentMessage(userId, planId);
+        console.log("WATCH: FROM CLICK complete method: ")
+        if (transaction) {
+            try {
+                const user = await UserModel.findById(transaction.userId).exec();
+                if (user) {
+                    await this.botService.handlePaymentSuccess(
+                        transaction.userId.toString(),
+                        user.telegramId,
+                        user.username
+                    );
+                }
+            } catch (error) {
+                logger.error('Error handling payment success:', error);
+                // Continue with the response even if notification fails
+            }
+        }
 
         return {
             click_trans_id: +transId,

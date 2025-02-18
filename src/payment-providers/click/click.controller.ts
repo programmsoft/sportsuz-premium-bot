@@ -9,6 +9,7 @@ export class ClickController {
     @Post('')
     @HttpCode(HttpStatus.OK)
     async handleMerchantTransactions(@Body() clickReqBody: ClickRequest) {
+        console.log("WATCH click controller: click is being used")
         return await this.clickService.handleMerchantTransactions(clickReqBody);
     }
 }
