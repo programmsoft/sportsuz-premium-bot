@@ -255,9 +255,9 @@ export class ClickService {
         }
 
         if (error > 0) {
-            await Transaction.findByIdAndUpdate(transId, {
-                status: TransactionStatus.CANCELED,
-            });
+            await Transaction.findOneAndUpdate(
+                {transId: transId},
+                {status: TransactionStatus.PAID});
             return {
                 error: error,
                 error_note: 'Failed',
@@ -265,9 +265,10 @@ export class ClickService {
         }
 
         // update payment status
-        await Transaction.findByIdAndUpdate(transId, {
-            status: TransactionStatus.PAID,
-        });
+        await Transaction.findOneAndUpdate(
+            {transId: transId},
+            {status: TransactionStatus.PAID}
+        );
 
         const startDate = new Date();
         const endDate = new Date(new Date().setDate(new Date().getDate() + plan.duration));

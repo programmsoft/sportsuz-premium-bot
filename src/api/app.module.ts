@@ -9,7 +9,7 @@ import {ClickModule} from "../payment-providers/click/click.module";
             isGlobal: true,
         }),
         PaymeModule,
-        ClickModule
+        ClickModule,
     ],
 })
 export class AppModule {}
