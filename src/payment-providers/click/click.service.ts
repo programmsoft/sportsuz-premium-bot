@@ -19,6 +19,7 @@ export class ClickService {
     constructor(
         private readonly configService: ConfigService,
     ) {
+        this.botService = new SubscriptionBot();
         const secretKey = this.configService.get<string>('CLICK_SECRET');
         if (!secretKey) {
             throw new Error('CLICK_SECRET is not defined in the configuration');
