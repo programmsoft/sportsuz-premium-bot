@@ -158,6 +158,8 @@ export class ClickService {
     }
 
     async complete(clickReqBody: ClickRequest) {
+
+        console.log("ClickRequest Body is : ", clickReqBody);
         const planId = clickReqBody.merchant_trans_id;
         const userId = clickReqBody.param2;
         const prepareId = clickReqBody.merchant_prepare_id;
@@ -167,6 +169,8 @@ export class ClickService {
         const signTime = clickReqBody.sign_time;
         const error = clickReqBody.error;
         const signString = clickReqBody.sign_string;
+
+        console.log("!!! WATCH !!! UserId is : ", userId);
 
         const myMD5Params = {
             clickTransId: transId,
