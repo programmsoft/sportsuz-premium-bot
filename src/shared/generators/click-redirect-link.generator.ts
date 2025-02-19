@@ -25,9 +25,9 @@ export function getClickRedirectLink(params: ClickRedirectParams) {
 
     // const url = `${CLICK_URL}/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${params.amount}&transaction_param=${params.planId}&additional_param3=${params.userId}&return_url=${BOT_URL}`;
     //
-    // console.log("Click url: " + url);
+    // console.log("Click url: " + url); //&additional_param3=${params.userId}
 
-    return `${CLICK_URL}/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${params.amount}&transaction_param=${params.planId}&additional_param3=${params.userId}&return_url=${BOT_URL}`;
+    return `${CLICK_URL}/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${params.amount}&transaction_param=${params.planId}&return_url=${BOT_URL}`;
 }
 
 // &return_url=https://t.me/sportsuz_premium_bot
