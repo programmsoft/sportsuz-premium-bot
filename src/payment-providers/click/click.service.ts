@@ -31,6 +31,8 @@ export class ClickService {
         const actionType = +clickReqBody.action;
         clickReqBody.amount = parseFloat(clickReqBody.amount + '');
 
+        logger.info(`Handling merchant transaction with action type: ${actionType}`);
+
         switch (actionType) {
             case ClickAction.Prepare:
                 return this.prepare(clickReqBody);
@@ -46,6 +48,9 @@ export class ClickService {
 
     async prepare(clickReqBody: ClickRequest) {
         console.log("I am being called: prepare method. The first line of the method")
+
+        logger.info('Preparing transaction', { clickReqBody });
+
         const planId = clickReqBody.merchant_trans_id;
         const userId = clickReqBody.param2;
         const amount = clickReqBody.amount;
@@ -64,7 +69,7 @@ export class ClickService {
         };
 
         const myMD5Hash = generateMD5(myMD5Params);
-
+        logger.warn('Signature validation failed', { transId });
         if (signString !== myMD5Hash) {
             return {
                 error: ClickError.SignFailed,
@@ -97,6 +102,8 @@ export class ClickService {
                 error_note: 'Cancelled',
             };
         }
+
+        logger.info(`Validating user and plan for userId: ${userId}, planId: ${planId}`);
 
         const user = await UserModel.findById(userId);
 
@@ -159,6 +166,8 @@ export class ClickService {
     }
 
     async complete(clickReqBody: ClickRequest) {
+
+        logger.info('Completing transaction', { clickReqBody });
 
         console.log("ClickRequest Body is : ", clickReqBody);
         const planId = clickReqBody.merchant_trans_id;
