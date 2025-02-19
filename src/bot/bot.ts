@@ -479,6 +479,42 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 return;
             }
 
+            // Check if subscription exists and is active
+            const existingSubscription = await this.subscriptionService.getSubscription(user._id as string);
+            if (!existingSubscription) {
+                const keyboard = new InlineKeyboard()
+                    .text("🎯 Obuna bo'lish", "subscribe")
+                    .row()
+                    .text("🔙 Asosiy menyu", "main_menu");
+
+                await ctx.editMessageText(
+                    "⚠️ Siz hali obuna bo'lmagansiz. Obuna bo'lish uchun quyidagi tugmani bosing:",
+                    {reply_markup: keyboard}
+                );
+                return;
+            }
+
+            // Calculate days until subscription expires
+            const now = new Date();
+            const daysUntilExpiration = Math.ceil(
+                (existingSubscription.subscriptionEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+            );
+
+            // If subscription is active and not within 3 days of expiration
+            if (existingSubscription.isActive && daysUntilExpiration > 3) {
+                const keyboard = new InlineKeyboard()
+                    .text("📊 Obuna holati", "check_status")
+                    .row()
+                    .text("🔙 Asosiy menyu", "main_menu");
+
+                await ctx.editMessageText(
+                    `⚠️ Sizning obunangiz hali faol va ${daysUntilExpiration} kundan so'ng tugaydi.\n\n` +
+                    `Obunani faqat muddati tugashiga 3 kun qolganda yoki muddati tugagandan so'ng yangilash mumkin.`,
+                    {reply_markup: keyboard}
+                );
+                return;
+            }
+
             const plan = await Plan.findOne({
                 name: 'Basic'
             });
@@ -495,10 +531,17 @@ ${expirationLabel} ${subscriptionEndDate}`;
                 userId: user._id as string
             });
 
+            // Get payment method keyboard with all available payment options
             const keyboard = await this.getPaymentMethodKeyboard(plan, user._id as string);
 
+            let message = "🔄 Obunani yangilash uchun to'lov turini tanlang:";
+            if (existingSubscription.isActive) {
+                message = `⚠️ Sizning obunangiz ${daysUntilExpiration} kundan so'ng tugaydi.\n\n` +
+                    `🔄 Obunani yangilash uchun to'lov turini tanlang:`;
+            }
+
             await ctx.editMessageText(
-                "🔄 Obunani yangilash uchun to'lov turini tanglang:",
+                message,
                 {reply_markup: keyboard}
             );
         } catch (error) {
