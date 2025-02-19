@@ -290,10 +290,12 @@ export class SubscriptionBot {
             let subscriptionEndDate = 'Mavjud emas';
 
             if (subscription.subscriptionStart) {
-                subscriptionStartDate = subscription.subscriptionStart.toLocaleDateString();
+                const d = subscription.subscriptionStart;
+                subscriptionStartDate = `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
             }
             if (subscription.subscriptionEnd) {
-                subscriptionEndDate = subscription.subscriptionEnd.toLocaleDateString();
+                const d = subscription.subscriptionEnd;
+                subscriptionEndDate = `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getFullYear()}`;
             }
 
             const message = `🎫 <b>Obuna ma'lumotlari:</b>\n
@@ -305,7 +307,6 @@ ${expirationLabel} ${subscriptionEndDate}`;
 
             if (subscription.isActive) {
                 const privateLink = await this.getPrivateLink();
-                // keyboard.text("❌ Obunani bekor qilish", "cancel_subscription");
                 keyboard.row()
                 keyboard.url("🔗 Kanalga kirish", privateLink.invite_link)
             } else {
