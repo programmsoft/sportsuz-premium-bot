@@ -116,6 +116,27 @@ export class SubscriptionService {
         );
     }
 
+    async renewSubscription(
+        userId: string,
+        plan: IPlanDocument
+    ): Promise<IUserDocument | null> {
+        const subscription = await this.getSubscription(userId);
+
+        if (!subscription) {
+            return null;
+        }
+
+
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + plan.duration);
+
+        subscription.subscriptionEnd = endDate;
+        subscription.isActive = true;
+
+        logger.info(`Renewing subscription for user ${userId}`, {plan});
+        return await subscription.save();
+    }
+
     async cancelSubscription(userId: string): Promise<boolean> {
         try {
             const subscription = await this.getSubscription(userId);
@@ -127,7 +148,6 @@ export class SubscriptionService {
 
             subscription.isActive = false;
             await subscription.save();
-
             logger.info(`Subscription for user ${userId} has been canceled.`);
             return true;
         } catch (error) {
