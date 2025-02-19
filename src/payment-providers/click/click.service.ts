@@ -268,7 +268,7 @@ export class ClickService {
         if (error > 0) {
             await Transaction.findOneAndUpdate(
                 {transId: transId},
-                {status: TransactionStatus.PAID});
+                {status: TransactionStatus.FAILED}); // ✅ Mark as failed
             return {
                 error: error,
                 error_note: 'Failed',

@@ -10,7 +10,8 @@ export const TransactionStatus = {
     PENDING: 'PENDING',
     CREATED: 'CREATED',
     PAID: 'PAID',
-    CANCELED: 'CANCELED'
+    CANCELED: 'CANCELED',
+    FAILED: 'FAILED',
 };
 
 export const transactionSchema = new mongoose.Schema({
