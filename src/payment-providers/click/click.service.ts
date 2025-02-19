@@ -69,8 +69,9 @@ export class ClickService {
         };
 
         const myMD5Hash = generateMD5(myMD5Params);
-        logger.warn('Signature validation failed', { transId });
+
         if (signString !== myMD5Hash) {
+            logger.warn('Signature validation failed', { transId });
             return {
                 error: ClickError.SignFailed,
                 error_note: 'Invalid sign_string',
