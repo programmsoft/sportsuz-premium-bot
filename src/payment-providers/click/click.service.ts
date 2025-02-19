@@ -47,8 +47,6 @@ export class ClickService {
     }
 
     async prepare(clickReqBody: ClickRequest) {
-        console.log("I am being called: prepare method. The first line of the method")
-
         logger.info('Preparing transaction', { clickReqBody });
 
         const planId = clickReqBody.merchant_trans_id;
@@ -78,73 +76,21 @@ export class ClickService {
             };
         }
 
-        const isAlreadyPaid = await Transaction.findOne({
-            userId,
-            planId,
-            status: TransactionStatus.PAID,
+        // Check if the transaction already exists and is not in a PENDING state
+        const existingTransaction = await Transaction.findOne({
+            transId: transId,
+            status: { $ne: TransactionStatus.PENDING }
         });
 
-        if (isAlreadyPaid) {
+        if (existingTransaction) {
             return {
                 error: ClickError.AlreadyPaid,
-                error_note: 'Already paid',
+                error_note: 'Transaction already processed',
             };
         }
 
-        const isCancelled = await Transaction.findOne({
-            userId,
-            planId,
-            status: TransactionStatus.CANCELED,
-        });
-
-        if (isCancelled) {
-            return {
-                error: ClickError.TransactionCanceled,
-                error_note: 'Cancelled',
-            };
-        }
-
-        logger.info(`Validating user and plan for userId: ${userId}, planId: ${planId}`);
-
-        const user = await UserModel.findById(userId);
-
-        if (!user) {
-            return {
-                error: ClickError.UserNotFound,
-                error_note: 'Invalid userId',
-            };
-        }
-
-        const plan = await Plan.findById(planId);
-
-        if (!plan) {
-            return {
-                error: ClickError.UserNotFound,
-                error_note: 'Product not found',
-            };
-        }
-
-        if (parseInt(`${amount}`) !== plan.price) {
-            console.error('Invalid amount');
-            return {
-                error: ClickError.InvalidAmount,
-                error_note: 'Invalid amount',
-            };
-        }
-
-        const transaction = await Transaction.findOne({
-            transId: transId,
-        });
-
-        if (transaction && transaction.status === TransactionStatus.CANCELED) {
-            return {
-                error: ClickError.TransactionCanceled,
-                error_note: 'Transaction canceled',
-            };
-        }
-
+        // Create a new transaction only if it doesn't exist or is in a PENDING state
         const time = new Date().getTime();
-
         await Transaction.create({
             provider: 'click',
             planId,
@@ -167,10 +113,8 @@ export class ClickService {
     }
 
     async complete(clickReqBody: ClickRequest) {
-
         logger.info('Completing transaction', { clickReqBody });
 
-        console.log("ClickRequest Body is : ", clickReqBody);
         const planId = clickReqBody.merchant_trans_id;
         const userId = clickReqBody.param2;
         const prepareId = clickReqBody.merchant_prepare_id;
@@ -180,8 +124,6 @@ export class ClickService {
         const signTime = clickReqBody.sign_time;
         const error = clickReqBody.error;
         const signString = clickReqBody.sign_string;
-
-        console.log("!!! WATCH !!! UserId is : ", userId);
 
         const myMD5Params = {
             clickTransId: transId,
@@ -268,7 +210,7 @@ export class ClickService {
         if (error > 0) {
             await Transaction.findOneAndUpdate(
                 {transId: transId},
-                {status: TransactionStatus.FAILED}); // ✅ Mark as failed
+                {status: TransactionStatus.FAILED});
             return {
                 error: error,
                 error_note: 'Failed',
@@ -292,8 +234,6 @@ export class ClickService {
             isActive: true,
         });
 
-
-        console.log("WATCH: FROM CLICK complete method: ")
         if (transaction) {
             try {
                 const user = await UserModel.findById(transaction.userId).exec();
