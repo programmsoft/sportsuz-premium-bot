@@ -68,7 +68,7 @@ export class SubscriptionBot {
                 .text("🔙 Asosiy menyu", "main_menu");
 
             let messageText = `🎉 Tabriklaymiz! To'lov muvaffaqiyatli amalga oshirildi!\n\n` +
-                `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
+                `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.getDate().toString().padStart(2, '0')}.${(subscription.subscriptionEnd.getMonth() + 1).toString().padStart(2, '0')}.${subscription.subscriptionEnd.getFullYear()}\n\n`;
 
             if (wasKickedOut) {
                 messageText += `ℹ️ Sizning avvalgi bloklanishingiz bekor qilindi. ` +
@@ -340,7 +340,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
                     .text("📊 Obuna holati", "check_status");
 
                 await ctx.editMessageText(
-                    `Siz allaqachon obuna bo'lgansiz ✅\n\nObuna tugash muddati: ${existingSubscription.subscriptionEnd?.toLocaleDateString()}`,
+                    `⚠️ Siz allaqachon obuna bo'lgansiz ✅\n\nObuna tugash muddati: ${existingSubscription.subscriptionEnd.getDate().toString().padStart(2, '0')}.${(existingSubscription.subscriptionEnd.getMonth() + 1).toString().padStart(2, '0')}.${existingSubscription.subscriptionEnd.getFullYear()}`,
                     {reply_markup: keyboard}
                 );
                 return;
@@ -416,9 +416,8 @@ ${expirationLabel} ${subscriptionEndDate}`;
                     .text("🔙 Asosiy menyu", "main_menu");
 
                 let messageText = `🎉 Tabriklaymiz! Siz muvaffaqiyatli obuna bo'ldingiz!\n\n` +
-                    `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.toLocaleDateString()}\n\n`;
-
-                messageText += `Quyidagi havola orqali kanalga kirishingiz mumkin:\n\n`;
+                    `⏰ Obuna tugash muddati: ${subscription.subscriptionEnd.getDate().toString().padStart(2, '0')}.${(subscription.subscriptionEnd.getMonth() + 1).toString().padStart(2, '0')}.${subscription.subscriptionEnd.getFullYear()}\n\n` +
+                    `Quyidagi havola orqali kanalga kirishingiz mumkin:\n\n`;
 
 
                 await ctx.editMessageText(messageText, {
@@ -483,8 +482,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
             const existingSubscription = await this.subscriptionService.getSubscription(user._id as string);
 
 
-
-            if ( !existingSubscription?.isActive || !existingSubscription) {
+            if (!existingSubscription?.isActive || !existingSubscription) {
                 const keyboard = new InlineKeyboard()
                     .text("🎯 Obuna bo'lish", "subscribe")
                     .row()
@@ -585,7 +583,7 @@ ${expirationLabel} ${subscriptionEndDate}`;
 
             await this.bot.api.sendMessage(
                 user.telegramId,
-                `✅ Obuna muvaffaqiyatli yangilandi!\n\n⏰ Yangi muddat: ${subscription.subscriptionEnd.toLocaleDateString()}`,
+                `✅ Obuna muvaffaqiyatli yangilandi!\n\n⏰ Yangi muddat: ${subscription.subscriptionEnd.getDate().toString().padStart(2, '0')}.${(subscription.subscriptionEnd.getMonth() + 1).toString().padStart(2, '0')}.${subscription.subscriptionEnd.getFullYear()}`,
                 {
                     reply_markup: keyboard
                 }
