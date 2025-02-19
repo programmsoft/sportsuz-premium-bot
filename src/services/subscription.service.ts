@@ -1,5 +1,4 @@
 import {IUserDocument, UserModel} from '../database/models/user.model';
-
 import logger from '../utils/logger';
 import {IPlanDocument} from "../database/models/plans.model";
 
@@ -16,89 +15,72 @@ export class SubscriptionService {
     ): Promise<SubscriptionResponse> {
         const existingUser = await UserModel.findById(userId).exec();
 
-        if (existingUser) {
-            if (!existingUser.isActive) {
-                const now = new Date();
-                let endDate = new Date();
+        if (!existingUser) {
+            // Create new user subscription
+            const now = new Date();
+            const endDate = new Date();
+            endDate.setDate(now.getDate() + plan.duration);
 
-                if (existingUser.subscriptionEnd > now) {
-                    endDate = new Date(existingUser.subscriptionEnd);
-                    endDate.setDate(endDate.getDate() + plan.duration);
-                } else {
+            const subscription = new UserModel({
+                userId,
+                username,
+                subscriptionStart: now,
+                subscriptionEnd: endDate,
+                isActive: true,
+                planId: plan.id,
+                isKickedOut: false
+            });
 
-                    endDate.setDate(now.getDate() + plan.duration);
-                }
+            const savedUser = await subscription.save();
 
-                existingUser.subscriptionStart = now;
-                existingUser.subscriptionEnd = endDate;
-                existingUser.isActive = true;
-                existingUser.plans.push(plan);
-                existingUser.isKickedOut = false;
-                if (username) {
-                    existingUser.username = username;
-                }
-
-                const wasKickedOut = existingUser.isKickedOut;
-                existingUser.isKickedOut = false;
-
-                const savedUser = await existingUser.save();
-
-                return {
-                    user: savedUser,
-                    wasKickedOut
-                };
-            }
-
-            throw new Error('User already has an active subscription');
+            return {
+                user: savedUser,
+                wasKickedOut: false
+            };
         }
 
-
+        // Handle both new subscriptions and renewals
         const now = new Date();
-        const endDate = new Date();
-        endDate.setDate(now.getDate() + plan.duration);
+        let endDate = new Date();
 
-        const subscription = new UserModel({
-            userId,
-            username,
-            subscriptionStart: now,
-            subscriptionEnd: endDate,
-            isActive: true,
-            planId: plan.id,
-            isKickedOut: false
-        });
+        if (existingUser.isActive) {
+            // If subscription is active, extend from current end date
+            endDate = new Date(existingUser.subscriptionEnd);
+            endDate.setDate(endDate.getDate() + plan.duration);
+        } else {
+            // If subscription is inactive, start from now
+            if (existingUser.subscriptionEnd > now) {
+                // If there's remaining time, add to it
+                endDate = new Date(existingUser.subscriptionEnd);
+                endDate.setDate(endDate.getDate() + plan.duration);
+            } else {
+                // If expired, start fresh
+                endDate.setDate(now.getDate() + plan.duration);
+            }
+        }
 
-        const savedUser = await subscription.save();
+        existingUser.subscriptionStart = now;
+        existingUser.subscriptionEnd = endDate;
+        existingUser.isActive = true;
+        existingUser.plans.push(plan);
+
+        const wasKickedOut = existingUser.isKickedOut;
+        existingUser.isKickedOut = false;
+
+        if (username) {
+            existingUser.username = username;
+        }
+
+        const savedUser = await existingUser.save();
 
         return {
             user: savedUser,
-            wasKickedOut: false
+            wasKickedOut
         };
     }
 
-
     async getSubscription(userId: string): Promise<IUserDocument | null> {
         return UserModel.findById(userId).exec();
-    }
-
-    async renewSubscription(
-        userId: string,
-        plan: IPlanDocument
-    ): Promise<IUserDocument | null> {
-        const subscription = await this.getSubscription(userId);
-
-        if (!subscription) {
-            return null;
-        }
-
-
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + plan.duration);
-
-        subscription.subscriptionEnd = endDate;
-        subscription.isActive = true;
-
-        logger.info(`Renewing subscription for user ${userId}`, {plan});
-        return await subscription.save();
     }
 
     async listExpiredSubscriptions(): Promise<IUserDocument[]> {
@@ -144,8 +126,6 @@ export class SubscriptionService {
             }
 
             subscription.isActive = false;
-            // subscription.subscriptionEnd = new Date(); // buni o'zgartirmaymiz chunki allaqachon pul to'lagan
-
             await subscription.save();
 
             logger.info(`Subscription for user ${userId} has been canceled.`);
@@ -155,6 +135,4 @@ export class SubscriptionService {
             return false;
         }
     }
-
-
 }
