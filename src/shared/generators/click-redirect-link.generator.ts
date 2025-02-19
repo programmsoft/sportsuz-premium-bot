@@ -23,6 +23,9 @@ export function getClickRedirectLink(params: ClickRedirectParams) {
     console.log('planId:', params.planId);
     console.log('userId:', params.userId);
 
+    const url = `${CLICK_URL}/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${params.amount}&transaction_param=${params.planId}&additional_param3=${params.userId}&return_url=${BOT_URL}`;
+
+    console.log("Click url: " + url);
 
     return `${CLICK_URL}/services/pay?service_id=${serviceId}&merchant_id=${merchantId}&amount=${params.amount}&transaction_param=${params.planId}&additional_param3=${params.userId}&return_url=${BOT_URL}`;
 }
