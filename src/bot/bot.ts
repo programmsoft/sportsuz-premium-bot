@@ -481,7 +481,10 @@ ${expirationLabel} ${subscriptionEndDate}`;
 
             // Check if subscription exists and is active
             const existingSubscription = await this.subscriptionService.getSubscription(user._id as string);
-            if (!existingSubscription) {
+
+
+
+            if ( !existingSubscription?.isActive || !existingSubscription) {
                 const keyboard = new InlineKeyboard()
                     .text("🎯 Obuna bo'lish", "subscribe")
                     .row()
