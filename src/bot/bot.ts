@@ -626,6 +626,8 @@ ${expirationLabel} ${subscriptionEndDate}`;
 
     private async createUserIfNotExist(ctx: BotContext): Promise<void> {
         const telegramId = ctx.from?.id;
+        const username = ctx.from?.username;
+
         if (!telegramId) {
             return;
         }
@@ -633,9 +635,14 @@ ${expirationLabel} ${subscriptionEndDate}`;
         const user = await UserModel.findOne({telegramId});
         if (!user) {
             const newUser = new UserModel({
-                telegramId
+                telegramId,
+                username
             });
             await newUser.save();
+        } else if (username && user.username !== username) {
+            // Update username if it has changed
+            user.username = username;
+            await user.save();
         }
     }
 
